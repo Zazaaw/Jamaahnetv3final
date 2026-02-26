@@ -8,6 +8,7 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle,
+  XCircle,
   Clock,
   Shield,
   Edit,
@@ -154,7 +155,8 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
           id: p.id,
           title: p.title || (p.content ? p.content.substring(0, 50) + (p.content.length > 50 ? '...' : '') : 'No Content'),
           content: p.content,
-          status: 'Published',
+          is_approved: p.is_approved, // Include is_approved value
+          status: p.is_approved ? 'Approved' : 'Pending', // Dynamic status based on is_approved
           date: new Date(p.created_at).toISOString().split('T')[0],
           views: p.views || 0
         })));
@@ -526,6 +528,40 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
     }
   };
 
+  const handleApproveTimeline = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('timeline_posts')
+        .update({ is_approved: true })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Postingan berhasil disetujui!');
+      fetchAnnouncements(); // Refresh data
+    } catch (error) {
+      console.error('Error approving timeline post:', error);
+      toast.error('Gagal menyetujui postingan');
+    }
+  };
+
+  const handleRejectTimeline = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('timeline_posts')
+        .update({ is_approved: false })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Postingan berhasil disembunyikan!');
+      fetchAnnouncements(); // Refresh data
+    } catch (error) {
+      console.error('Error rejecting timeline post:', error);
+      toast.error('Gagal menyembunyikan postingan');
+    }
+  };
+
   const handleDeleteEvent = async (eventId: string) => {
     if (!confirm('Yakin ingin menghapus kegiatan ini?')) return;
 
@@ -614,6 +650,84 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
       year: 'numeric'
     });
   };
+
+  const UserCard = ({ user, index, handleUpdateRole, handleDeleteUser, handleApproveUser }: any) => (
+    <motion.div
+      key={user.id}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-800"
+    >
+      <div className="flex items-center gap-4">
+        {user.avatar_url ? (
+          <img 
+            src={user.avatar_url} 
+            alt={user.name} 
+            className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-gray-800 shadow-sm"
+          />
+        ) : (
+          <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-lg shadow-sm">
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+        )}
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <h4 className="font-semibold text-gray-900 dark:text-white truncate">
+              {user.name}
+            </h4>
+            {user.role === 'Admin' && (
+              <BadgeCheck className="w-5 h-5 text-white fill-blue-500 shrink-0" />
+            )}
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+            {user.email}
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+            user.status === 'Active' || user.status === 'approved'
+              ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+              : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+          }`}>
+            {user.status || 'Active'}
+          </span>
+
+          <div className="relative">
+            <select 
+              value={user.role || 'Member'}
+              onChange={(e) => handleUpdateRole(user.id, e.target.value)}
+              className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-semibold rounded-xl px-4 py-2 text-gray-700 dark:text-gray-300 appearance-none active:scale-95 transition-all outline-none focus:ring-2 focus:ring-emerald-500"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <option value="Member">Member</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+          
+          {user.status === 'Pending' || user.status === 'pending' ? (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-1 text-xs"
+              onClick={() => handleApproveUser(user.id)}
+            >
+              <UserCheck className="w-4 h-4" />
+              APPROVE
+            </motion.button>
+          ) : (
+            <button
+              className="p-2 text-red-500 bg-red-50 dark:bg-red-500/10 active:bg-red-100 dark:active:bg-red-500/20 rounded-xl transition-all active:scale-95 hover:bg-red-100 dark:hover:bg-red-900/20"
+              onClick={() => handleDeleteUser(user.id)}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -997,77 +1111,73 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                 </div>
               </div>
 
-              {/* Users List */}
-              <div className="space-y-3">
-                {users.map((user, index) => (
-                  <motion.div
-                    key={user.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-800"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-white font-bold text-lg">
-                          {user.name.charAt(0)}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <h4 className="font-semibold text-gray-900 dark:text-white truncate">
-                            {user.name}
-                          </h4>
-                          {user.role === 'Admin' && (
-                            <BadgeCheck className="w-5 h-5 text-white fill-blue-500 shrink-0" />
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {user.email}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          user.status === 'Active' || user.status === 'approved'
-                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                            : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
-                        }`}>
-                          {user.status}
-                        </span>
-
-                        <div className="relative">
-                          <select 
-                            value={user.role || 'Member'}
-                            onChange={(e) => handleUpdateRole(user.id, e.target.value)}
-                            className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-semibold rounded-xl px-4 py-2 text-gray-700 dark:text-gray-300 appearance-none active:scale-95 transition-all"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <option value="Member">Member</option>
-                            <option value="Admin">Admin</option>
-                          </select>
-                        </div>
-                        
-                        {user.status === 'Pending' ? (
-                          <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
-                            onClick={() => handleApproveUser(user.id)}
-                          >
-                            <UserCheck className="w-5 h-5" />
-                            APPROVE
-                          </motion.button>
-                        ) : (
-                          <button
-                            className="p-2.5 text-red-500 bg-red-50 dark:bg-red-500/10 active:bg-red-100 dark:active:bg-red-500/20 rounded-xl transition-all active:scale-95"
-                            onClick={() => handleDeleteUser(user.id)}
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        )}
-                      </div>
+              {/* Users List Grouped */}
+              <div className="space-y-8">
+                {/* Admins Section */}
+                {users.filter(u => u.role === 'Admin').length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-amber-500" />
+                      Admins
+                    </h3>
+                    <div className="space-y-3">
+                      {users.filter(u => u.role === 'Admin').map((user, index) => (
+                        <UserCard 
+                          key={user.id} 
+                          user={user} 
+                          index={index} 
+                          handleUpdateRole={handleUpdateRole}
+                          handleDeleteUser={handleDeleteUser}
+                          handleApproveUser={handleApproveUser}
+                        />
+                      ))}
                     </div>
-                  </motion.div>
-                ))}
+                  </div>
+                )}
+
+                {/* Pending Approval Section */}
+                {users.filter(u => u.status === 'Pending' || u.status === 'pending').length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-orange-500" />
+                      Pending Approval
+                    </h3>
+                    <div className="space-y-3">
+                      {users.filter(u => u.status === 'Pending' || u.status === 'pending').map((user, index) => (
+                        <UserCard 
+                          key={user.id} 
+                          user={user} 
+                          index={index} 
+                          handleUpdateRole={handleUpdateRole}
+                          handleDeleteUser={handleDeleteUser}
+                          handleApproveUser={handleApproveUser}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Active Members Section */}
+                {users.filter(u => u.role !== 'Admin' && (u.status === 'Active' || u.status === 'approved')).length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-emerald-500" />
+                      Active Members
+                    </h3>
+                    <div className="space-y-3">
+                      {users.filter(u => u.role !== 'Admin' && (u.status === 'Active' || u.status === 'approved')).map((user, index) => (
+                        <UserCard 
+                          key={user.id} 
+                          user={user} 
+                          index={index} 
+                          handleUpdateRole={handleUpdateRole}
+                          handleDeleteUser={handleDeleteUser}
+                          handleApproveUser={handleApproveUser}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -1313,12 +1423,13 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                           <h4 className="font-bold text-gray-900 dark:text-white">
                             {announcement.title}
                           </h4>
+                          {/* Dynamic Status Badge */}
                           <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                            announcement.status === 'Published'
+                            announcement.is_approved
                               ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400'
+                              : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
                           }`}>
-                            {announcement.status}
+                            {announcement.is_approved ? '🟢 Approved' : '⏳ Pending'}
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
@@ -1329,7 +1440,7 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                             <Calendar className="w-4 h-4" />
                             {formatDate(announcement.date)}
                           </div>
-                          {announcement.status === 'Published' && (
+                          {announcement.is_approved && (
                             <div className="flex items-center gap-1">
                               <Eye className="w-4 h-4" />
                               {announcement.views} views
@@ -1345,13 +1456,31 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                       </motion.button>
                     </div>
                     <div className="flex gap-2">
-                      <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        className="flex-1 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
-                      >
-                        <Edit className="w-4 h-4" />
-                        Edit
-                      </motion.button>
+                      {/* Approve Button - Show only if not approved */}
+                      {!announcement.is_approved && (
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          className="flex-1 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
+                          onClick={() => handleApproveTimeline(announcement.id)}
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          Approve
+                        </motion.button>
+                      )}
+                      
+                      {/* Reject/Hide Button - Show only if approved */}
+                      {announcement.is_approved && (
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          className="flex-1 py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
+                          onClick={() => handleRejectTimeline(announcement.id)}
+                        >
+                          <XCircle className="w-4 h-4" />
+                          Hide
+                        </motion.button>
+                      )}
+                      
+                      {/* Delete Button - Always shown */}
                       <motion.button
                         whileTap={{ scale: 0.95 }}
                         className="flex-1 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"

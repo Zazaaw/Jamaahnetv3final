@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Heart, MessageCircle, Send, Edit2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { projectId } from '../utils/supabase/info';
+import { getSupabaseClient } from '../utils/supabase/client';
 
 interface Comment {
   id: string;
@@ -41,6 +41,7 @@ export default function TimelineDetailScreen({
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isLiked, setIsLiked] = useState(false);
+  const supabase = getSupabaseClient();
 
   useEffect(() => {
     loadPostData();
@@ -61,26 +62,35 @@ export default function TimelineDetailScreen({
       return;
     }
 
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/timeline/${post.id}/like`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        }
-      );
+    const userId = session.user.id;
+    const currentLikes = likes || [];
+    const isCurrentlyLiked = currentLikes.includes(userId);
+    
+    let updatedLikes;
+    if (isCurrentlyLiked) {
+      updatedLikes = currentLikes.filter(id => id !== userId);
+    } else {
+      updatedLikes = [...currentLikes, userId];
+    }
 
-      if (response.ok) {
-        const data = await response.json();
-        setLikes(data.likes);
-        setIsLiked(data.isLiked);
-        toast.success(data.isLiked ? 'Postingan dilike! ❤️' : 'Like dibatalkan');
-      }
+    // Optimistic update
+    setLikes(updatedLikes);
+    setIsLiked(!isCurrentlyLiked);
+    toast.success(!isCurrentlyLiked ? 'Postingan dilike! ❤️' : 'Like dibatalkan');
+
+    try {
+      const { error } = await supabase
+        .from('announcements')
+        .update({ likes: updatedLikes })
+        .eq('id', post.id);
+
+      if (error) throw error;
     } catch (error) {
       console.error('Error toggling like:', error);
       toast.error('Gagal toggle like');
+      // Revert optimistic update
+      setLikes(currentLikes);
+      setIsLiked(isCurrentlyLiked);
     }
   };
 
@@ -95,54 +105,58 @@ export default function TimelineDetailScreen({
       return;
     }
 
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/timeline/${post.id}/comment`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            text: newComment.trim(),
-          }),
-        }
-      );
+    const newCommentObj: Comment = {
+      id: crypto.randomUUID(),
+      user_id: session.user.id,
+      user_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Anonymous',
+      text: newComment.trim(),
+      created_at: new Date().toISOString(),
+    };
 
-      if (response.ok) {
-        const newCommentData = await response.json();
-        setComments([newCommentData, ...comments]);
-        setNewComment('');
-        toast.success('Komentar berhasil ditambahkan! 💬');
-      }
+    const updatedComments = [newCommentObj, ...comments];
+
+    // Optimistic update
+    setComments(updatedComments);
+    setNewComment('');
+    toast.success('Komentar berhasil ditambahkan! 💬');
+
+    try {
+      const { error } = await supabase
+        .from('announcements')
+        .update({ comments: updatedComments })
+        .eq('id', post.id);
+
+      if (error) throw error;
     } catch (error) {
       console.error('Error adding comment:', error);
       toast.error('Gagal menambahkan komentar');
+      // Revert optimistic update
+      setComments(comments);
     }
   };
 
   const handleDeleteComment = async (commentId: string) => {
     if (!session) return;
 
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/timeline/${post.id}/comment/${commentId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        }
-      );
+    const previousComments = [...comments];
+    const updatedComments = comments.filter((c) => c.id !== commentId);
 
-      if (response.ok) {
-        setComments(comments.filter((c) => c.id !== commentId));
-        toast.success('Komentar dihapus');
-      }
+    // Optimistic update
+    setComments(updatedComments);
+    toast.success('Komentar dihapus');
+
+    try {
+      const { error } = await supabase
+        .from('announcements')
+        .update({ comments: updatedComments })
+        .eq('id', post.id);
+
+      if (error) throw error;
     } catch (error) {
       console.error('Error deleting comment:', error);
       toast.error('Gagal menghapus komentar');
+      // Revert optimistic update
+      setComments(previousComments);
     }
   };
 
@@ -203,7 +217,7 @@ export default function TimelineDetailScreen({
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
               <span className="text-white font-bold text-lg">
-                {post.user_name[0].toUpperCase()}
+                {post.user_name?.charAt(0)?.toUpperCase() || 'A'}
               </span>
             </div>
             <div>
@@ -327,7 +341,7 @@ export default function TimelineDetailScreen({
                   >
                     <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                       <span className="text-white font-bold text-sm">
-                        {comment.user_name[0].toUpperCase()}
+                        {comment.user_name?.charAt(0)?.toUpperCase() || 'A'}
                       </span>
                     </div>
                     <div className="flex-1 bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-4">

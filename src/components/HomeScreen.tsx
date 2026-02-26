@@ -45,6 +45,7 @@ interface TimelinePost {
   created_at: number;
   likes?: string[];
   comments?: any[];
+  is_approved?: boolean;
 }
 
 export default function HomeScreen({ 
@@ -116,11 +117,22 @@ export default function HomeScreen({
   const fetchTimeline = async () => {
     try {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase
+      
+      // Build query with .or() for approval filter
+      let query = supabase
         .from('timeline_posts')
         .select('*, profiles(name, avatar_url)')
-        .eq('status', 'published')
         .order('created_at', { ascending: false });
+      
+      // If user is logged in, fetch approved posts OR user's own pending posts
+      // If not logged in, only fetch approved posts
+      if (session?.user?.id) {
+        query = query.or(`is_approved.eq.true,and(is_approved.eq.false,user_id.eq.${session.user.id})`);
+      } else {
+        query = query.eq('is_approved', true);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching timeline:', error);
@@ -772,6 +784,12 @@ function TwitterStylePost({
                 month: 'short',
               })}
             </span>
+            {/* Pending Approval Badge - Only shown for unapproved posts */}
+            {post.is_approved === false && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full text-xs font-semibold">
+                ⏳ Menunggu Approve
+              </span>
+            )}
           </div>
 
           {/* Title & Content */}
