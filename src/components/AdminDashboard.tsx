@@ -33,7 +33,8 @@ import {
   BadgeCheck,
   ChevronRight,
   Zap,
-  List
+  List,
+  BookOpen
 } from 'lucide-react';
 import { IslamicPattern } from './IslamicPattern';
 import { getSupabaseClient } from '../utils/supabase/client';
@@ -41,13 +42,14 @@ import { toast } from 'sonner';
 import CreateEventModal from './modals/CreateEventModal';
 import CreateAnnouncementModal from './modals/CreateAnnouncementModal';
 import CreateCampaignModal from './modals/CreateCampaignModal';
+import CreateArticleModal from './modals/CreateArticleModal';
 
 interface AdminDashboardProps {
   session: any;
   onNavigate: (screen: string) => void;
 }
 
-type TabType = 'overview' | 'users' | 'announcements' | 'events' | 'marketplace' | 'campaigns' | 'moderation' | 'reports';
+type TabType = 'overview' | 'users' | 'timeline' | 'events' | 'marketplace' | 'campaigns' | 'articles' | 'moderation' | 'reports';
 
 export default function AdminDashboard({ session, onNavigate }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -65,16 +67,18 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
   });
 
   const [users, setUsers] = useState<any[]>([]);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [timelinePosts, setTimelinePosts] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [articles, setArticles] = useState<any[]>([]);
   const [moderationQueue, setModerationQueue] = useState<any[]>([]);
   const [userReports, setUserReports] = useState<any[]>([]);
   const [marketplaceCategory, setMarketplaceCategory] = useState('All');
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [showCreateAnnouncement, setShowCreateAnnouncement] = useState(false);
   const [showCreateCampaign, setShowCreateCampaign] = useState(false);
+  const [showCreateArticle, setShowCreateArticle] = useState(false);
 
   const supabase = getSupabaseClient();
 
@@ -87,10 +91,11 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
     try {
       await Promise.all([
         fetchUsers(),
-        fetchAnnouncements(), // Timeline/Posts
+        fetchTimelinePosts(),
         fetchEvents(),
         fetchCampaigns(),
         fetchProducts(),
+        fetchArticles(),
         fetchDonations(),
         fetchModerationQueue(),
         fetchUserReports()
@@ -140,8 +145,8 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
     }
   };
 
-  const fetchAnnouncements = async () => {
-    // Fetch from 'posts' table (Timeline)
+  const fetchTimelinePosts = async () => {
+    // Fetch from 'timeline_posts' table
     try {
       const { data, error } = await supabase
         .from('timeline_posts')
@@ -151,18 +156,18 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
       if (error) throw error;
 
       if (data) {
-        setAnnouncements(data.map((p: any) => ({
+        setTimelinePosts(data.map((p: any) => ({
           id: p.id,
           title: p.title || (p.content ? p.content.substring(0, 50) + (p.content.length > 50 ? '...' : '') : 'No Content'),
           content: p.content,
-          is_approved: p.is_approved, // Include is_approved value
-          status: p.is_approved ? 'Approved' : 'Pending', // Dynamic status based on is_approved
+          is_approved: p.is_approved,
+          status: p.is_approved ? 'Approved' : 'Pending',
           date: new Date(p.created_at).toISOString().split('T')[0],
           views: p.views || 0
         })));
       }
     } catch (error) {
-      console.error('Error fetching announcements (posts):', error);
+      console.error('Error fetching timeline posts:', error);
     }
   };
 
@@ -180,6 +185,23 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
       }
     } catch (error) {
       console.error('Error fetching events:', error);
+    }
+  };
+
+  const fetchArticles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        setArticles(data);
+      }
+    } catch (error) {
+      console.error('Error fetching articles:', error);
     }
   };
 
@@ -520,11 +542,28 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
 
       if (error) throw error;
 
-      toast.success('Postingan berhasil dihapus!');
-      fetchAnnouncements(); // Refresh data
+      toast.success('Timeline post berhasil dihapus!');
+      fetchTimelinePosts(); // Refresh data
     } catch (error) {
-      console.error('Error deleting announcement:', error);
-      toast.error('Gagal menghapus postingan');
+      console.error('Error deleting timeline post:', error);
+      toast.error('Gagal menghapus timeline post');
+    }
+  };
+
+  const handleDeleteArticle = async (articleId: string) => {
+    try {
+      const { error } = await supabase
+        .from('articles')
+        .delete()
+        .eq('id', articleId);
+
+      if (error) throw error;
+
+      toast.success('Article berhasil dihapus!');
+      fetchArticles(); // Refresh data
+    } catch (error) {
+      console.error('Error deleting article:', error);
+      toast.error('Gagal menghapus article');
     }
   };
 
@@ -537,11 +576,11 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
 
       if (error) throw error;
 
-      toast.success('Postingan berhasil disetujui!');
-      fetchAnnouncements(); // Refresh data
+      toast.success('Timeline post berhasil disetujui!');
+      fetchTimelinePosts(); // Refresh data
     } catch (error) {
       console.error('Error approving timeline post:', error);
-      toast.error('Gagal menyetujui postingan');
+      toast.error('Gagal menyetujui timeline post');
     }
   };
 
@@ -554,11 +593,11 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
 
       if (error) throw error;
 
-      toast.success('Postingan berhasil disembunyikan!');
-      fetchAnnouncements(); // Refresh data
+      toast.success('Timeline post berhasil disembunyikan!');
+      fetchTimelinePosts(); // Refresh data
     } catch (error) {
       console.error('Error rejecting timeline post:', error);
-      toast.error('Gagal menyembunyikan postingan');
+      toast.error('Gagal menyembunyikan timeline post');
     }
   };
 
@@ -789,6 +828,12 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
             label="Users"
           />
           <TabButton
+            active={activeTab === 'timeline'}
+            onClick={() => setActiveTab('timeline')}
+            icon={List}
+            label="Timeline"
+          />
+          <TabButton
             active={activeTab === 'events'}
             onClick={() => setActiveTab('events')}
             icon={Calendar}
@@ -801,16 +846,16 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
             label="Marketplace"
           />
           <TabButton
-            active={activeTab === 'announcements'}
-            onClick={() => setActiveTab('announcements')}
-            icon={Megaphone}
-            label="Announcements"
-          />
-          <TabButton
             active={activeTab === 'campaigns'}
             onClick={() => setActiveTab('campaigns')}
             icon={TrendingUp}
             label="Campaigns"
+          />
+          <TabButton
+            active={activeTab === 'articles'}
+            onClick={() => setActiveTab('articles')}
+            icon={BookOpen}
+            label="Articles"
           />
           <TabButton
             active={activeTab === 'moderation'}
@@ -1379,10 +1424,10 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
             </motion.div>
           )}
 
-          {/* ANNOUNCEMENTS TAB */}
-          {activeTab === 'announcements' && (
+          {/* TIMELINE TAB */}
+          {activeTab === 'timeline' && (
             <motion.div
-              key="announcements"
+              key="timeline"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -1397,7 +1442,7 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                 onClick={() => setShowCreateAnnouncement(true)}
               >
                 <Plus className="w-6 h-6" />
-                Create New Announcement
+                Create New Timeline Post
               </motion.button>
 
               <CreateAnnouncementModal
@@ -1407,9 +1452,9 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                 onSuccess={fetchAllData}
               />
 
-              {/* Announcements List */}
+              {/* Timeline Posts List */}
               <div className="space-y-3">
-                {announcements.map((announcement, index) => (
+                {timelinePosts.map((announcement, index) => (
                   <motion.div
                     key={announcement.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -1618,6 +1663,115 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                     </motion.div>
                   );
                 })}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ARTICLES TAB */}
+          {activeTab === 'articles' && (
+            <motion.div
+              key="articles"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Create New Button */}
+              <motion.button
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full mb-6 bg-gradient-to-r from-teal-600 to-emerald-600 text-white rounded-2xl p-4 shadow-xl flex items-center justify-center gap-3 font-semibold"
+                onClick={() => setShowCreateArticle(true)}
+              >
+                <Plus className="w-6 h-6" />
+                Create New Article
+              </motion.button>
+
+              <CreateArticleModal
+                session={session}
+                isOpen={showCreateArticle}
+                onClose={() => setShowCreateArticle(false)}
+                onSuccess={fetchAllData}
+              />
+
+              {/* Articles List */}
+              <div className="space-y-3">
+                {articles.map((article, index) => (
+                  <motion.div
+                    key={article.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-200 dark:border-gray-800"
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Article Image */}
+                      {article.image && (
+                        <div className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+                          <img
+                            src={article.image}
+                            alt={article.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Article Details */}
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h4 className="font-bold text-gray-900 dark:text-white mb-1">
+                              {article.title}
+                            </h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">
+                              {article.excerpt}
+                            </p>
+                            <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Users className="w-4 h-4" />
+                                {article.author || 'Admin'}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                {new Date(article.created_at).toLocaleDateString('id-ID', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                          >
+                            <MoreVertical className="w-5 h-5 text-gray-400" />
+                          </motion.button>
+                        </div>
+                        
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 mt-3">
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            className="flex-1 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
+                          >
+                            <Edit className="w-4 h-4" />
+                            Edit
+                          </motion.button>
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            className="flex-1 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
+                            onClick={() => handleDeleteArticle(article.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </motion.button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </motion.div>
           )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Wallet, MessageSquare, History, LogOut, ChevronRight, Edit, Moon, Sun, Settings, Sparkles, Users, Clock, Menu, X, Grid, Heart, MessageCircle, Bookmark, CreditCard, Lock, Phone, Shield, Info } from 'lucide-react';
+import { User, Wallet, MessageSquare, History, LogOut, ChevronRight, Edit, Moon, Sun, Settings, Sparkles, Users, Clock, Menu, X, Grid, Heart, MessageCircle, Bookmark, CreditCard, Lock, Phone, Shield, Info, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSupabaseClient } from '../utils/supabase/client';
 import EditProfileModal from './EditProfileModal';
@@ -38,7 +38,8 @@ export default function ProfileScreen({
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [userPosts, setUserPosts] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'posts' | 'saved'>('posts');
+  const [userProducts, setUserProducts] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'posts' | 'market'>('posts');
   
   const supabase = getSupabaseClient();
 
@@ -46,7 +47,9 @@ export default function ProfileScreen({
     if (session) {
       fetchProfile();
       fetchUserPosts();
-      getBookmarkedPosts().then(setBookmarkedPosts);
+      if (activeTab === 'market') {
+        fetchUserProducts();
+      }
     }
   }, [session, activeTab]);
 
@@ -91,12 +94,25 @@ export default function ProfileScreen({
     }
   };
 
-  const getBookmarkedPosts = async () => {
-    // Return empty array as bookmarks table doesn't exist yet
-    return [];
+  const fetchUserProducts = async () => {
+    try {
+      if (!session) return;
+      
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (data) {
+        setUserProducts(data);
+      }
+    } catch (error) {
+      console.error('Error fetching user products:', error);
+    }
   };
-
-  const [bookmarkedPosts, setBookmarkedPosts] = React.useState<any[]>([]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -328,14 +344,14 @@ export default function ProfileScreen({
             <Grid className="w-5 h-5" />
           </button>
           <button
-            onClick={() => setActiveTab('saved')}
+            onClick={() => setActiveTab('market')}
             className={`flex-1 py-3 flex items-center justify-center gap-2 border-t-2 transition-colors ${
-              activeTab === 'saved'
+              activeTab === 'market'
                 ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white'
                 : 'border-transparent text-gray-400 dark:text-gray-500'
             }`}
           >
-            <Bookmark className="w-5 h-5" />
+            <ShoppingBag className="w-5 h-5" />
           </button>
         </motion.div>
       </div>
@@ -405,9 +421,9 @@ export default function ProfileScreen({
           </>
         )}
 
-        {activeTab === 'saved' && (
+        {activeTab === 'market' && (
           <>
-            {bookmarkedPosts.length === 0 ? (
+            {userProducts.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -415,52 +431,67 @@ export default function ProfileScreen({
                 className="text-center py-16"
               >
                 <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Bookmark className="w-10 h-10 text-gray-400 dark:text-gray-600" />
+                  <ShoppingBag className="w-10 h-10 text-gray-400 dark:text-gray-600" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  Belum ada postingan tersimpan
+                  Belum ada produk yang dijual
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Simpan postingan favorit Anda di sini
+                  Mulai berjualan di Pasar Jamaah!
                 </p>
               </motion.div>
             ) : (
-              <div className="grid grid-cols-3 gap-1 mt-1">
-                {bookmarkedPosts.map((post, index) => (
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                {userProducts.map((product, index) => (
                   <motion.div
-                    key={post.id}
+                    key={product.id}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.4 + index * 0.05 }}
-                    onClick={() => onNavigate('timeline-detail', post)}
-                    className="aspect-square cursor-pointer group relative overflow-hidden bg-gray-100 dark:bg-gray-800"
+                    onClick={() => onNavigate('product-detail', product)}
+                    className="cursor-pointer group relative overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-md"
                   >
-                    {post.image ? (
-                      <>
+                    {/* Product Image */}
+                    <div className="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700 relative">
+                      {product.images && product.images.length > 0 ? (
                         <img
-                          src={post.image}
-                          alt={post.title}
+                          src={product.images[0]}
+                          alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                          <div className="flex items-center gap-1 text-white">
-                            <Heart className="w-5 h-5" fill="white" />
-                            <span className="font-semibold">{post.likes?.length || 0}</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-white">
-                            <MessageCircle className="w-5 h-5" fill="white" />
-                            <span className="font-semibold">{post.comments?.length || 0}</span>
-                          </div>
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 flex items-center justify-center">
+                          <ShoppingBag className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
                         </div>
-                      </>
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center p-3">
-                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 line-clamp-4 text-center">
-                          {post.title}
-                        </p>
+                      )}
+                      
+                      {/* Status Badge */}
+                      <div className="absolute top-2 right-2">
+                        {product.status === 'approved' ? (
+                          <div className="bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">
+                            LIVE
+                          </div>
+                        ) : product.status === 'pending' ? (
+                          <div className="bg-yellow-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">
+                            PENDING
+                          </div>
+                        ) : (
+                          <div className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">
+                            REJECTED
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
+
+                    {/* Product Info */}
+                    <div className="p-3">
+                      <h3 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2 mb-1">
+                        {product.name}
+                      </h3>
+                      <p className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                        {formatPrice(product.price)}
+                      </p>
+                    </div>
                   </motion.div>
                 ))}
               </div>

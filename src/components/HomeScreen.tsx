@@ -99,16 +99,18 @@ export default function HomeScreen({
 
   const fetchArticles = async () => {
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/articles`,
-        {
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
-        }
-      );
-      const data = await response.json();
-      setArticles(data.slice(0, 3));
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (error) throw error;
+
+      if (data) {
+        setArticles(data);
+      }
     } catch (error) {
       console.error('Error fetching articles:', error);
     }
