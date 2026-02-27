@@ -21,6 +21,7 @@ import AllArticlesScreen from './components/AllArticlesScreen';
 import CreateTimelineScreen from './components/CreateTimelineScreen';
 import TimelineDetailScreen from './components/TimelineDetailScreen';
 import ContactScreen from './components/ContactScreen';
+import AboutJamaah from './components/AboutJamaah';
 import AdminDashboard from './components/AdminDashboard';
 import AppFooter from './components/AppFooter';
 import InitData from './components/InitData';
@@ -28,7 +29,7 @@ import { toast } from 'sonner';
 
 const supabase = getSupabaseClient();
 
-type Screen = 'splash' | 'home' | 'calendar' | 'marketplace' | 'donation' | 'profile' | 'auth' | 'pending-approval' | 'product-detail' | 'chat-list' | 'chat' | 'connections' | 'article-detail' | 'all-articles' | 'create-timeline' | 'timeline-detail' | 'contact' | 'admin-dashboard';
+type Screen = 'splash' | 'home' | 'calendar' | 'marketplace' | 'donation' | 'profile' | 'auth' | 'pending-approval' | 'product-detail' | 'chat-list' | 'chat' | 'connections' | 'article-detail' | 'all-articles' | 'create-timeline' | 'timeline-detail' | 'contact' | 'about' | 'admin-dashboard';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
@@ -316,6 +317,17 @@ export default function App() {
     return (
       <>
         <ContactScreen 
+          onBack={() => setCurrentScreen('profile')}
+        />
+        <Toaster position="top-center" richColors />
+      </>
+    );
+  }
+
+  if (currentScreen === 'about') {
+    return (
+      <>
+        <AboutJamaah 
           onBack={() => setCurrentScreen('profile')}
         />
         <Toaster position="top-center" richColors />

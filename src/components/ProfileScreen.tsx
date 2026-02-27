@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Wallet, MessageSquare, History, LogOut, ChevronRight, Edit, Moon, Sun, Settings, Sparkles, Users, Clock, Menu, X, Grid, Heart, MessageCircle, Bookmark, CreditCard, Lock, Phone, Shield } from 'lucide-react';
+import { User, Wallet, MessageSquare, History, LogOut, ChevronRight, Edit, Moon, Sun, Settings, Sparkles, Users, Clock, Menu, X, Grid, Heart, MessageCircle, Bookmark, CreditCard, Lock, Phone, Shield, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSupabaseClient } from '../utils/supabase/client';
 import EditProfileModal from './EditProfileModal';
@@ -619,6 +619,19 @@ export default function ProfileScreen({
                   delay={0.4}
                 />
 
+                {/* About Jamaah.net */}
+                <SettingsMenuItem
+                  icon={Info}
+                  title="Tentang Jamaah.net"
+                  subtitle="Visi & misi komunitas"
+                  gradient="from-teal-500 to-cyan-500"
+                  onClick={() => {
+                    setShowSettingsMenu(false);
+                    onNavigate('about');
+                  }}
+                  delay={0.45}
+                />
+
                 {/* Admin Dashboard - Only visible for Admin role */}
                 {profile?.role === 'Admin' && (
                   <SettingsMenuItem
@@ -630,7 +643,7 @@ export default function ProfileScreen({
                       setShowSettingsMenu(false);
                       onNavigate('admin-dashboard');
                     }}
-                    delay={0.45}
+                    delay={0.5}
                     isHighlighted={true}
                   />
                 )}
@@ -639,7 +652,7 @@ export default function ProfileScreen({
                 <motion.button
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: profile?.role === 'Admin' ? 0.5 : 0.45 }}
+                  transition={{ delay: profile?.role === 'Admin' ? 0.55 : 0.5 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={onLogout}
                   className="w-full bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 flex items-center gap-3 border-2 border-red-200 dark:border-red-800"

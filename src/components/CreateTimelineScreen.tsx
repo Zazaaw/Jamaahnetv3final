@@ -18,12 +18,40 @@ export default function CreateTimelineScreen({
   const [title, setTitle] = useState(editPost?.title || '');
   const [content, setContent] = useState(editPost?.content || '');
   const [image, setImage] = useState(editPost?.image || '');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>(editPost?.image || '');
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
   const supabase = getSupabaseClient();
 
   const isEditMode = !!editPost;
+
+  // Handle file selection with 5MB validation
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      toast.error('Ukuran gambar maksimal 5MB!');
+      e.target.value = ''; // Clear the input
+      return;
+    }
+
+    // Set file and create preview
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  // Clear selected image
+  const handleClearImage = () => {
+    setImageFile(null);
+    setImagePreview('');
+    setImage('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +70,28 @@ export default function CreateTimelineScreen({
     setError('');
 
     try {
+      let imageUrl = image; // Use existing image URL if available
+
+      // If there's a new file selected, upload it first
+      if (imageFile) {
+        const fileName = `${Date.now()}-${imageFile.name}`;
+        
+        const { data, error: uploadError } = await supabase
+          .storage
+          .from('timeline-images')
+          .upload(fileName, imageFile);
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: urlData } = supabase
+          .storage
+          .from('timeline-images')
+          .getPublicUrl(fileName);
+
+        imageUrl = urlData.publicUrl;
+      }
+
       if (isEditMode) {
         // Update existing post via Supabase
         const { error: updateError } = await supabase
@@ -49,7 +99,7 @@ export default function CreateTimelineScreen({
           .update({
             title: title.trim(),
             content: content.trim(),
-            image_url: image || null,
+            image: imageUrl || null,
           })
           .eq('id', editPost.id);
 
@@ -64,8 +114,7 @@ export default function CreateTimelineScreen({
             user_id: session.user.id,
             title: title.trim(),
             content: content.trim(),
-            image_url: image || null,
-            status: 'published'
+            image: imageUrl || null,
           });
 
         if (insertError) throw insertError;
@@ -146,36 +195,37 @@ export default function CreateTimelineScreen({
             />
           </div>
 
-          {/* Image URL Input (Optional) */}
+          {/* Image Upload Input (Optional) */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
               <ImageIcon className="w-4 h-4" />
               Gambar (opsional)
             </label>
             <input
-              type="url"
-              value={image}
-              onChange={(e) => setImage(e.target.value)}
-              placeholder="https://contoh.com/gambar.jpg"
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
               className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white"
-              disabled={loading}
+              disabled={loading || uploading}
             />
-            {image && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Maksimal ukuran file: 5MB
+            </p>
+            {imagePreview && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="mt-3 relative"
               >
                 <img
-                  src={image}
+                  src={imagePreview}
                   alt="Preview"
                   className="w-full h-48 object-cover rounded-2xl"
-                  onError={() => setImage('')}
                 />
                 <button
                   type="button"
-                  onClick={() => setImage('')}
-                  className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full"
+                  onClick={handleClearImage}
+                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
