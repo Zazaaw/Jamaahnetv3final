@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { User, Wallet, MessageSquare, History, LogOut, ChevronRight, Edit, Moon, Sun, Settings, Sparkles, Users, Clock, Menu, X, Grid, Heart, MessageCircle, Bookmark, CreditCard, Lock, Phone, Shield, Info, ShoppingBag } from 'lucide-react';
+import { User, Wallet, MessageSquare, History, LogOut, ChevronRight, Edit, Moon, Sun, Settings, Sparkles, Users, Clock, Menu, X, Grid, Heart, MessageCircle, Bookmark, CreditCard, Lock, Phone, Shield, Info, ShoppingBag, Languages } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSupabaseClient } from '../utils/supabase/client';
 import EditProfileModal from './EditProfileModal';
 import PrayerTimesSettingsModal from './PrayerTimesSettingsModal';
 import ChangePasswordModal from './ChangePasswordModal';
 import { IslamicPattern, MosqueIcon } from './IslamicPattern';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface Profile {
   id: string;
@@ -17,6 +18,7 @@ interface Profile {
   mosque?: string;
   avatar_url?: string;
   bio?: string;
+  member_id?: string;
 }
 
 export default function ProfileScreen({ 
@@ -32,6 +34,7 @@ export default function ProfileScreen({
   darkMode: boolean;
   onToggleDarkMode: () => void;
 }) {
+  const { t, language, toggleLanguage } = useLanguage();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPrayerTimesSettingsModal, setShowPrayerTimesSettingsModal] = useState(false);
@@ -122,35 +125,9 @@ export default function ProfileScreen({
     }).format(price);
   };
 
+  // Fallback for unauthenticated users (should never reach here due to App.tsx interception)
   if (!session) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-purple-50/20 to-pink-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center p-6">
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <IslamicPattern className="text-purple-600 dark:text-purple-400 opacity-[0.02]" />
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-gray-100 dark:border-gray-700/50 text-center max-w-md w-full"
-        >
-          <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl">
-            <User className="w-10 h-10 text-white" />
-          </div>
-          <h2 className="text-2xl font-bold mb-2 dark:text-white">Selamat Datang</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Daftar atau masuk untuk mengakses fitur lengkap jamaah.net
-          </p>
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={() => onNavigate('auth')}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all"
-          >
-            Daftar / Masuk
-          </motion.button>
-        </motion.div>
-      </div>
-    );
+    return null;
   }
 
   // Stats calculation
@@ -270,7 +247,7 @@ export default function ProfileScreen({
         </motion.div>
 
         {/* Member ID Card */}
-        {session?.user?.user_metadata?.memberId && (
+        {profile?.member_id && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -300,7 +277,7 @@ export default function ProfileScreen({
               
               <div className="bg-white/20 backdrop-blur-md rounded-xl p-3 border border-white/30">
                 <div className="font-mono text-2xl font-bold text-white tracking-wider text-center">
-                  {session.user.user_metadata.memberId}
+                  {profile.member_id}
                 </div>
               </div>
               

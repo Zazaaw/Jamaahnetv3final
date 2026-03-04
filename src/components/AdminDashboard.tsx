@@ -122,7 +122,7 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
           id: u.id,
           name: u.full_name || u.name || 'Anonymous User',
           email: u.email || 'Email hidden', // Email might not be available in profiles
-          memberId: u.id ? u.id.substring(0, 8).toUpperCase() : 'UNKNOWN',
+          memberId: u.member_id || (u.status === 'Pending' ? 'Pending Approval' : u.id.substring(0, 8).toUpperCase()),
           status: u.status || 'Active', // Default to Active if status column missing
           role: u.role || 'user'
         }));
@@ -480,15 +480,35 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
 
   const handleApproveUser = async (userId: string) => {
     try {
+      // First, check if the user already has a member_id
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('member_id')
+        .eq('id', userId)
+        .single();
+
+      // Generate member_id only if user doesn't have one
+      let updateData: { status: string; member_id?: string } = { status: 'Active' };
+      
+      if (!existingProfile?.member_id) {
+        // Generate unique Member ID in format: JM-YYYYMM-RANDOM
+        const date = new Date();
+        const yearMonth = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+        const generatedMemberId = `JM-${yearMonth}-${randomSuffix}`;
+        
+        updateData.member_id = generatedMemberId;
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({ status: 'Active' })
+        .update(updateData)
         .eq('id', userId);
 
       if (error) throw error;
 
       toast.success('User berhasil disetujui!');
-      fetchUsers(); // Refresh data
+      fetchUsers(); // Refresh data to show new member_id
     } catch (error) {
       console.error('Error approving user:', error);
       toast.error('Gagal menyetujui user');
@@ -722,6 +742,9 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
             {user.email}
+          </p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5">
+            {user.memberId}
           </p>
         </div>
         

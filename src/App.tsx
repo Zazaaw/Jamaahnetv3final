@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Toaster } from 'sonner@2.0.3';
 import { getSupabaseClient } from './utils/supabase/client';
 import { projectId } from './utils/supabase/info';
+import { LanguageProvider } from './utils/LanguageContext';
 import SplashScreen from './components/SplashScreen';
 import HomeScreen from './components/HomeScreen';
 import CalendarScreen from './components/CalendarScreen';
@@ -32,6 +33,14 @@ const supabase = getSupabaseClient();
 type Screen = 'splash' | 'home' | 'calendar' | 'marketplace' | 'donation' | 'profile' | 'auth' | 'pending-approval' | 'product-detail' | 'chat-list' | 'chat' | 'connections' | 'article-detail' | 'all-articles' | 'create-timeline' | 'timeline-detail' | 'contact' | 'about' | 'admin-dashboard';
 
 export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
+  );
+}
+
+function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
   const [previousScreen, setPreviousScreen] = useState<Screen>('home');
   const [session, setSession] = useState<any>(null);
@@ -416,7 +425,13 @@ export default function App() {
                 icon={User}
                 label="Akun"
                 active={currentScreen === 'profile'}
-                onClick={() => setCurrentScreen('profile')}
+                onClick={() => {
+                  if (session) {
+                    setCurrentScreen('profile');
+                  } else {
+                    setCurrentScreen('auth');
+                  }
+                }}
               />
             </div>
           </div>
