@@ -29,18 +29,53 @@ export default function CreateArticleModal({ session, isOpen, onClose, onSuccess
     setLoading(true);
 
     try {
+      // 1. Fetch current user profile to get role and is_official_mode
+      const { data: currentUserProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, is_official_mode')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      const { role, is_official_mode } = currentUserProfile;
+
+      // 2. Determine auto-approval and official status
+      let approved = false;
+      let official = false;
+
+      if (role === 'Admin') {
+        approved = true;
+        official = true;
+      } else if (role === 'pengurus_masjid' && is_official_mode === true) {
+        approved = true;
+        official = true;
+      } else {
+        approved = false;
+        official = false;
+      }
+
+      // 3. Prepare payload with status and is_official
       const { error } = await supabase.from('articles').insert([{
         title: formData.title,
         excerpt: formData.excerpt,
         content: formData.content,
         author: formData.author || 'Admin',
         image: formData.image || null,
+        status: approved ? 'approved' : 'pending',
+        is_official: official,
         created_at: new Date().toISOString()
       }]);
 
       if (error) throw error;
 
-      toast.success('Article successfully created!');
+      // 4. Show appropriate toast message based on status
+      if (approved) {
+        toast.success('Postingan berhasil diterbitkan!');
+      } else {
+        toast.success('Postingan terkirim! Menunggu persetujuan Admin.');
+      }
+
       setFormData({ title: '', excerpt: '', content: '', author: '', image: '' });
       onSuccess();
       onClose();

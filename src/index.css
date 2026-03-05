@@ -3113,10 +3113,6 @@
     fill: var(--color-amber-400);
   }
 
-  .fill-blue-500 {
-    fill: var(--color-blue-500);
-  }
-
   .fill-current {
     fill: currentColor;
   }
@@ -3518,6 +3514,10 @@
 
   .text-blue-100 {
     color: var(--color-blue-100);
+  }
+
+  .text-blue-500 {
+    color: var(--color-blue-500);
   }
 
   .text-blue-600 {

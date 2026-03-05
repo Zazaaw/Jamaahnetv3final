@@ -517,15 +517,21 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
 
   const handleUpdateRole = async (userId: string, newRole: string) => {
     try {
+      // Initialize is_official_mode based on role
+      const updatePayload = {
+        role: newRole,
+        is_official_mode: newRole === 'pengurus_masjid' ? false : null
+      };
+
       const { error } = await supabase
         .from('profiles')
-        .update({ role: newRole })
+        .update(updatePayload)
         .eq('id', userId);
 
       if (error) throw error;
 
-      toast.success(`Role user berhasil diubah menjadi ${newRole}`);
-      fetchUsers();
+      toast.success(`Role user berhasil diubah menjadi ${newRole.replace('_', ' ')}`);
+      await fetchUsers(); // Refresh data immediately
     } catch (error) {
       console.error('Error updating user role:', error);
       toast.error('Gagal mengubah role user');
@@ -737,7 +743,16 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
               {user.name}
             </h4>
             {user.role === 'Admin' && (
-              <BadgeCheck className="w-5 h-5 text-white fill-blue-500 shrink-0" />
+              <div className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full text-xs font-semibold shrink-0">
+                <Shield className="w-3 h-3" />
+                <span>Admin</span>
+              </div>
+            )}
+            {user.role === 'pengurus_masjid' && (
+              <div className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full text-xs font-semibold shrink-0">
+                <BadgeCheck className="w-3 h-3" />
+                <span>Pengurus</span>
+              </div>
             )}
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
@@ -759,12 +774,13 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
 
           <div className="relative">
             <select 
-              value={user.role || 'Member'}
+              value={user.role || 'user'}
               onChange={(e) => handleUpdateRole(user.id, e.target.value)}
               className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-semibold rounded-xl px-4 py-2 text-gray-700 dark:text-gray-300 appearance-none active:scale-95 transition-all outline-none focus:ring-2 focus:ring-emerald-500"
               onClick={(e) => e.stopPropagation()}
             >
-              <option value="Member">Member</option>
+              <option value="user">Jamaah (User)</option>
+              <option value="pengurus_masjid">Pengurus Masjid</option>
               <option value="Admin">Admin</option>
             </select>
           </div>
@@ -1203,6 +1219,28 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                   </div>
                 )}
 
+                {/* Pengurus Masjid Section */}
+                {users.filter(u => u.role === 'pengurus_masjid' && (u.status === 'Active' || u.status === 'approved')).length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <BadgeCheck className="w-5 h-5 text-blue-500" />
+                      Pengurus Masjid
+                    </h3>
+                    <div className="space-y-3">
+                      {users.filter(u => u.role === 'pengurus_masjid' && (u.status === 'Active' || u.status === 'approved')).map((user, index) => (
+                        <UserCard 
+                          key={user.id} 
+                          user={user} 
+                          index={index} 
+                          handleUpdateRole={handleUpdateRole}
+                          handleDeleteUser={handleDeleteUser}
+                          handleApproveUser={handleApproveUser}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Pending Approval Section */}
                 {users.filter(u => u.status === 'Pending' || u.status === 'pending').length > 0 && (
                   <div>
@@ -1226,14 +1264,14 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                 )}
 
                 {/* Active Members Section */}
-                {users.filter(u => u.role !== 'Admin' && (u.status === 'Active' || u.status === 'approved')).length > 0 && (
+                {users.filter(u => u.role !== 'Admin' && u.role !== 'pengurus_masjid' && (u.status === 'Active' || u.status === 'approved')).length > 0 && (
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                       <Users className="w-5 h-5 text-emerald-500" />
-                      Active Members
+                      Active Members (Jamaah)
                     </h3>
                     <div className="space-y-3">
-                      {users.filter(u => u.role !== 'Admin' && (u.status === 'Active' || u.status === 'approved')).map((user, index) => (
+                      {users.filter(u => u.role !== 'Admin' && u.role !== 'pengurus_masjid' && (u.status === 'Active' || u.status === 'approved')).map((user, index) => (
                         <UserCard 
                           key={user.id} 
                           user={user} 

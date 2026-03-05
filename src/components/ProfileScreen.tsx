@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Wallet, MessageSquare, History, LogOut, ChevronRight, Edit, Moon, Sun, Settings, Sparkles, Users, Clock, Menu, X, Grid, Heart, MessageCircle, Bookmark, CreditCard, Lock, Phone, Shield, Info, ShoppingBag, Languages, Repeat2, Share2, MoreVertical, Trash2, Award, Share } from 'lucide-react';
+import { User, Wallet, MessageSquare, History, LogOut, ChevronRight, Edit, Moon, Sun, Settings, Sparkles, Users, Clock, Menu, X, Grid, Heart, MessageCircle, Bookmark, CreditCard, Lock, Phone, Shield, Info, ShoppingBag, Languages, Repeat2, Share2, MoreVertical, Trash2, Award, Share, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { projectId } from '../utils/supabase/info';
@@ -20,6 +20,7 @@ interface Profile {
   avatar_url?: string;
   bio?: string;
   member_id?: string;
+  is_official_mode?: boolean;
 }
 
 export default function ProfileScreen({ 
@@ -45,6 +46,7 @@ export default function ProfileScreen({
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [userProducts, setUserProducts] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'posts' | 'market' | 'media'>('posts');
+  const [isOfficialMode, setIsOfficialMode] = useState(false);
   
   const supabase = getSupabaseClient();
 
@@ -68,6 +70,7 @@ export default function ProfileScreen({
         
       if (error) throw error;
       setProfile(data);
+      setIsOfficialMode(data?.is_official_mode || false);
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
@@ -121,6 +124,26 @@ export default function ProfileScreen({
       }
     } catch (error) {
       console.error('Error fetching user products:', error);
+    }
+  };
+
+  const handleToggleOfficialMode = async () => {
+    try {
+      const newMode = !isOfficialMode;
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_official_mode: newMode })
+        .eq('id', session.user.id);
+      
+      if (error) throw error;
+      
+      setIsOfficialMode(newMode);
+      
+      // Refresh profile to ensure data is in sync
+      await fetchProfile();
+    } catch (error) {
+      console.error('Error toggling official mode:', error);
     }
   };
 
@@ -229,6 +252,42 @@ export default function ProfileScreen({
             </div>
           )}
         </motion.div>
+
+        {/* Official Mode Toggle - Only for pengurus_masjid */}
+        {profile?.role === 'pengurus_masjid' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mb-4"
+          >
+            <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-3 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                {isOfficialMode && (
+                  <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                )}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                    Mode Pengurus Mesjid
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {isOfficialMode ? 'Aktif sebagai pengurus' : 'Mode personal'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleToggleOfficialMode}
+                className={`w-12 h-6 rounded-full transition-colors relative ${
+                  isOfficialMode ? 'bg-emerald-600' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
+                <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                  isOfficialMode ? 'translate-x-6' : ''
+                }`} />
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Badges - Horizontal Scroll */}
         <motion.div
