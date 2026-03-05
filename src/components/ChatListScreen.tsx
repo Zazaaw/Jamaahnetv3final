@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, MessageCircle, Loader2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner@2.0.3';
-import { projectId } from '../utils/supabase/info';
+import { getSupabaseClient } from '../utils/supabase/client';
 import { IslamicPattern } from './IslamicPattern';
 
 interface Chat {
@@ -40,55 +40,49 @@ export default function ChatListScreen({
 
   const fetchChats = async () => {
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/chats`,
-        {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        }
-      );
-      const data = await response.json();
-      setChats(data);
+      const supabase = getSupabaseClient();
+      
+      // Query chats with messages
+      const { data: chatsData, error: chatsError } = await supabase
+        .from('chats')
+        .select('*, messages(*)')
+        .contains('participants', [session.user.id]);
 
-      // Fetch user profiles for all participants
-      const userIds = new Set<string>();
-      data.forEach((chat: Chat) => {
-        chat.participants.forEach(id => {
-          if (id !== session.user.id) {
-            userIds.add(id);
-          }
-        });
-      });
+      if (chatsError) {
+        console.error('Error fetching chats:', chatsError);
+        setChats([]);
+      } else {
+        setChats(chatsData || []);
 
-      const profiles: Record<string, UserProfile> = {};
-      await Promise.all(
-        Array.from(userIds).map(async (userId) => {
-          try {
-            const response = await fetch(
-              `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/users/${userId}`
-            );
-            if (response.ok) {
-              const profile = await response.json();
-              profiles[userId] = profile;
-              console.log('Fetched profile for', userId, ':', profile);
-            } else {
-              console.error('Failed to fetch profile for', userId, '- Status:', response.status);
-              try {
-                const errorData = await response.json();
-                console.error('Error details:', errorData);
-              } catch {
-                const errorText = await response.text();
-                console.error('Error details (text):', errorText);
-              }
+        // Fetch user profiles for all participants
+        const userIds = new Set<string>();
+        (chatsData || []).forEach((chat: Chat) => {
+          chat.participants.forEach(id => {
+            if (id !== session.user.id) {
+              userIds.add(id);
             }
-          } catch (error) {
-            console.error('Error fetching user profile for', userId, ':', error);
+          });
+        });
+
+        // Fetch all profiles in a single query
+        if (userIds.size > 0) {
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', Array.from(userIds));
+
+          if (profilesError) {
+            console.error('Error fetching profiles:', profilesError);
+          } else {
+            const profiles: Record<string, UserProfile> = {};
+            (profilesData || []).forEach((profile: UserProfile) => {
+              profiles[profile.id] = profile;
+            });
+            console.log('All profiles:', profiles);
+            setUserProfiles(profiles);
           }
-        })
-      );
-      console.log('All profiles:', profiles);
-      setUserProfiles(profiles);
+        }
+      }
     } catch (error) {
       console.error('Error fetching chats:', error);
     } finally {
@@ -126,22 +120,18 @@ export default function ChatListScreen({
     
     setDeletingChatId(chatId);
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/chats/${chatId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        }
-      );
+      const supabase = getSupabaseClient();
+      const { error } = await supabase
+        .from('chats')
+        .delete()
+        .eq('id', chatId);
 
-      if (response.ok) {
+      if (error) {
+        console.error('Error deleting chat:', error);
+        toast.error('Gagal menghapus percakapan');
+      } else {
         toast.success('Percakapan berhasil dihapus');
         setChats(chats.filter(chat => chat.id !== chatId));
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Gagal menghapus percakapan');
       }
     } catch (error) {
       console.error('Error deleting chat:', error);

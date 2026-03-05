@@ -3,7 +3,6 @@ import { Home, Search, Plus, MessageSquare, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Toaster } from 'sonner@2.0.3';
 import { getSupabaseClient } from './utils/supabase/client';
-import { projectId } from './utils/supabase/info';
 import { LanguageProvider } from './utils/LanguageContext';
 
 // Screen Imports
@@ -121,6 +120,61 @@ function AppContent() {
     setCurrentScreen('home');
   };
 
+  const handleStartChat = async (recipientId: string) => {
+    if (!session?.user?.id) {
+      toast.error('Anda harus login terlebih dahulu');
+      return;
+    }
+
+    try {
+      // Check if a chat already exists between the two users
+      const { data: existingChats, error: fetchError } = await supabase
+        .from('chats')
+        .select('*')
+        .contains('participants', [session.user.id, recipientId]);
+
+      if (fetchError) {
+        console.error('Error fetching existing chats:', fetchError);
+        toast.error('Gagal memulai percakapan');
+        return;
+      }
+
+      // Filter to ensure exact match (both IDs present and length is 2)
+      const exactMatch = existingChats?.find(
+        chat => 
+          chat.participants.length === 2 &&
+          chat.participants.includes(session.user.id) &&
+          chat.participants.includes(recipientId)
+      );
+
+      if (exactMatch) {
+        // Navigate to existing chat
+        handleNavigation('chat', exactMatch);
+      } else {
+        // Create new chat - database handles timestamps automatically via DEFAULT NOW()
+        const { data: newChat, error: createError } = await supabase
+          .from('chats')
+          .insert({
+            participants: [session.user.id, recipientId]
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating chat:', createError);
+          toast.error('Gagal memulai percakapan');
+          return;
+        }
+
+        // Navigate to new chat
+        handleNavigation('chat', newChat);
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      toast.error('Gagal memulai percakapan');
+    }
+  };
+
   if (currentScreen === 'splash') {
     return (
       <>
@@ -164,7 +218,7 @@ function AppContent() {
           session={session}
           onBack={() => setCurrentScreen('marketplace')}
           onStartChat={(recipientId, productId) => {
-            handleNavigation('chat', { recipientId, productId });
+            handleStartChat(recipientId);
           }}
         />
         <Toaster position="top-center" richColors />
@@ -204,31 +258,7 @@ function AppContent() {
         <ConnectionsScreen 
           session={session}
           onBack={() => setCurrentScreen('profile')}
-          onStartChat={async (recipientId) => {
-            // Create or get chat with this user
-            try {
-              const response = await fetch(
-                `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/chats`,
-                {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    recipient_id: recipientId,
-                  }),
-                }
-              );
-              
-              if (response.ok) {
-                const chat = await response.json();
-                handleNavigation('chat', chat);
-              }
-            } catch (error) {
-              console.error('Error starting chat:', error);
-            }
-          }}
+          onStartChat={handleStartChat}
         />
         <Toaster position="top-center" richColors />
       </>
@@ -370,34 +400,7 @@ function AppContent() {
           session={session} 
           user={selectedUser} 
           onNavigate={handleNavigation}
-          onStartChat={async (recipientId) => {
-            // Create or get chat with this user
-            try {
-              const response = await fetch(
-                `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/chats`,
-                {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    recipient_id: recipientId,
-                  }),
-                }
-              );
-              
-              if (response.ok) {
-                const chat = await response.json();
-                handleNavigation('chat', chat);
-              } else {
-                toast.error('Gagal memulai percakapan');
-              }
-            } catch (error) {
-              console.error('Error starting chat:', error);
-              toast.error('Gagal memulai percakapan');
-            }
-          }}
+          onStartChat={handleStartChat}
         />
         <Toaster position="top-center" richColors />
       </>

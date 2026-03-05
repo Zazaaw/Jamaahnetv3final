@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Send, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { projectId } from '../utils/supabase/info';
+import { getSupabaseClient } from '../utils/supabase/client';
 
 export default function ChatScreen({ 
   chat, 
@@ -40,25 +40,15 @@ export default function ChatScreen({
     console.log('Fetching profile for user:', otherUserId);
 
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/users/${otherUserId}`
-      );
+      const supabase = getSupabaseClient();
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', otherUserId)
+        .single();
       
-      console.log('Profile fetch response status:', response.status);
-      
-      if (response.ok) {
-        const profile = await response.json();
-        console.log('Fetched profile:', profile);
-        setOtherUser(profile);
-      } else {
-        console.error('Failed to fetch profile - Status:', response.status);
-        try {
-          const errorData = await response.json();
-          console.error('Error details:', errorData);
-        } catch {
-          const errorText = await response.text();
-          console.error('Error details (text):', errorText);
-        }
+      if (error) {
+        console.error('Error fetching profile from Supabase:', error);
         // Fallback: set basic user info from chat participant names
         const fallbackName = chat.participant_names?.[otherUserId] || 'User';
         setOtherUser({
@@ -66,6 +56,9 @@ export default function ChatScreen({
           name: fallbackName,
           username: undefined
         });
+      } else {
+        console.log('Fetched profile:', profile);
+        setOtherUser(profile);
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -101,22 +94,20 @@ export default function ChatScreen({
 
     setLoading(true);
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/chats/${chat.id}/messages`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text: newMessage,
-          }),
-        }
-      );
+      const supabase = getSupabaseClient();
+      const { data: message, error } = await supabase
+        .from('messages')
+        .insert({
+          chat_id: chat.id,
+          sender_id: session.user.id,
+          text: newMessage
+        })
+        .select()
+        .single();
 
-      if (response.ok) {
-        const message = await response.json();
+      if (error) {
+        console.error('Error sending message:', error);
+      } else {
         setMessages([...messages, message]);
         setNewMessage('');
       }
