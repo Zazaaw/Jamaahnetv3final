@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { User, Wallet, MessageSquare, History, LogOut, ChevronRight, Edit, Moon, Sun, Settings, Sparkles, Users, Clock, Menu, X, Grid, Heart, MessageCircle, Bookmark, CreditCard, Lock, Phone, Shield, Info, ShoppingBag, Languages, Repeat2, Share2, MoreVertical, Trash2, Award, Share } from 'lucide-react';
+import { User, MessageSquare, Grid, Heart, MessageCircle, Award, CreditCard, Users, ShoppingBag, Repeat2, Bookmark, Share2, MoreVertical, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { projectId } from '../utils/supabase/info';
-import EditProfileModal from './EditProfileModal';
-import PrayerTimesSettingsModal from './PrayerTimesSettingsModal';
-import ChangePasswordModal from './ChangePasswordModal';
 import { IslamicPattern, MosqueIcon } from './IslamicPattern';
-import { useLanguage } from '../utils/LanguageContext';
 
 interface Profile {
   id: string;
@@ -22,25 +18,18 @@ interface Profile {
   member_id?: string;
 }
 
-export default function ProfileScreen({ 
+export default function PublicProfileScreen({ 
   session, 
+  user,
   onNavigate,
-  onLogout,
-  darkMode,
-  onToggleDarkMode 
+  onStartChat
 }: { 
   session: any;
+  user: any;
   onNavigate: (screen: string, data?: any) => void;
-  onLogout: () => void;
-  darkMode: boolean;
-  onToggleDarkMode: () => void;
+  onStartChat: (userId: string) => void;
 }) {
-  const { t, language, toggleLanguage } = useLanguage();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showPrayerTimesSettingsModal, setShowPrayerTimesSettingsModal] = useState(false);
-  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
-  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showMemberCardModal, setShowMemberCardModal] = useState(false);
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [userProducts, setUserProducts] = useState<any[]>([]);
@@ -49,21 +38,21 @@ export default function ProfileScreen({
   const supabase = getSupabaseClient();
 
   useEffect(() => {
-    if (session) {
+    if (user) {
       fetchProfile();
       fetchUserPosts();
       if (activeTab === 'market') {
         fetchUserProducts();
       }
     }
-  }, [session, activeTab]);
+  }, [user, activeTab]);
 
   const fetchProfile = async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', session.user.id)
+        .eq('id', user.id)
         .single();
         
       if (error) throw error;
@@ -75,7 +64,7 @@ export default function ProfileScreen({
 
   const fetchUserPosts = async () => {
     try {
-      if (!session) return;
+      if (!user) return;
       
       const { data, error } = await supabase
         .from('timeline_posts')
@@ -87,7 +76,7 @@ export default function ProfileScreen({
             avatar_url
           )
         `)
-        .eq('user_id', session.user.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -106,12 +95,12 @@ export default function ProfileScreen({
 
   const fetchUserProducts = async () => {
     try {
-      if (!session) return;
+      if (!user) return;
       
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('user_id', session.user.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -131,11 +120,6 @@ export default function ProfileScreen({
       minimumFractionDigits: 0,
     }).format(price);
   };
-
-  // Fallback for unauthenticated users
-  if (!session) {
-    return null;
-  }
 
   // Stats calculation
   const totalConnections = 0;
@@ -158,13 +142,6 @@ export default function ProfileScreen({
       >
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold dark:text-white">Profil</h1>
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setShowSettingsMenu(true)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
-          >
-            <Menu className="w-6 h-6 dark:text-white" />
-          </motion.button>
         </div>
       </motion.div>
 
@@ -183,7 +160,7 @@ export default function ProfileScreen({
               {profile?.name || 'User'}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
-              @{profile?.email?.split('@')[0] || session.user.email?.split('@')[0]}
+              @{profile?.email?.split('@')[0] || user.email?.split('@')[0]}
             </p>
           </div>
 
@@ -263,37 +240,24 @@ export default function ProfileScreen({
             <span className="dark:text-white">{totalPosts} Postingan</span>
           </div>
 
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onNavigate('connections')}
-            className="flex-shrink-0 border border-gray-300 dark:border-gray-700 rounded-full px-4 py-1.5 text-sm font-medium flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
+          <div className="flex-shrink-0 border border-gray-300 dark:border-gray-700 rounded-full px-4 py-1.5 text-sm font-medium flex items-center gap-2 bg-white dark:bg-gray-900">
             <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <span className="dark:text-white">{totalConnections} Koneksi</span>
-          </motion.button>
+          </div>
         </motion.div>
 
-        {/* Action Buttons - 2 Column Grid */}
-        <motion.div
+        {/* Action Button - Message */}
+        <motion.button
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="grid grid-cols-2 gap-3 mb-6"
+          whileTap={{ scale: 0.98 }}
+          onClick={() => onStartChat(user.id)}
+          className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-2 rounded-xl font-semibold text-sm mb-6 shadow-lg flex items-center justify-center gap-2"
         >
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowEditModal(true)}
-            className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
-          >
-            Edit Profil
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-          >
-            Bagikan Profil
-          </motion.button>
-        </motion.div>
+          <MessageSquare className="w-4 h-4" />
+          Kirim Pesan
+        </motion.button>
 
         {/* Navigation Tabs - Minimalist Text-Based */}
         <motion.div
@@ -354,7 +318,7 @@ export default function ProfileScreen({
                   Belum ada postingan
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Mulai berbagi kegiatan ibadah Anda
+                  Pengguna ini belum memiliki postingan
                 </p>
               </motion.div>
             ) : (
@@ -391,7 +355,7 @@ export default function ProfileScreen({
                   Belum ada produk yang dijual
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Mulai berjualan di Pasar Jamaah!
+                  Pengguna ini belum menjual produk
                 </p>
               </motion.div>
             ) : (
@@ -513,243 +477,11 @@ export default function ProfileScreen({
         {showMemberCardModal && (
           <MemberCard3DModal
             profile={profile}
-            session={session}
+            user={user}
             onClose={() => setShowMemberCardModal(false)}
           />
         )}
       </AnimatePresence>
-
-      {/* Settings Menu */}
-      <AnimatePresence>
-        {showSettingsMenu && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowSettingsMenu(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-            />
-
-            {/* Menu Panel */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="fixed top-0 right-0 bottom-0 w-full max-w-sm bg-white dark:bg-gray-900 z-50 shadow-2xl overflow-y-auto"
-            >
-              {/* Header */}
-              <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold">Pengaturan</h2>
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setShowSettingsMenu(false)}
-                    className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center"
-                  >
-                    <X className="w-5 h-5" />
-                  </motion.button>
-                </div>
-                <p className="text-white/80 text-sm">Kelola akun dan preferensi Anda</p>
-              </div>
-
-              {/* Menu Items */}
-              <div className="p-4 space-y-2">
-                {/* Dark Mode Toggle */}
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4"
-                >
-                  <button
-                    onClick={onToggleDarkMode}
-                    className="w-full flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-xl">
-                        {darkMode ? (
-                          <Moon className="w-5 h-5 text-white" />
-                        ) : (
-                          <Sun className="w-5 h-5 text-white" />
-                        )}
-                      </div>
-                      <div className="text-left">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Mode Gelap</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {darkMode ? 'Aktif' : 'Nonaktif'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className={`w-12 h-6 rounded-full transition-colors ${
-                      darkMode ? 'bg-purple-600' : 'bg-gray-300'
-                    } relative`}>
-                      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                        darkMode ? 'translate-x-6' : ''
-                      }`} />
-                    </div>
-                  </button>
-                </motion.div>
-
-                {/* Prayer Times */}
-                <SettingsMenuItem
-                  icon={Clock}
-                  title="Waktu Sholat"
-                  subtitle="Atur jadwal sholat"
-                  gradient="from-emerald-500 to-teal-500"
-                  onClick={() => {
-                    setShowSettingsMenu(false);
-                    setShowPrayerTimesSettingsModal(true);
-                  }}
-                  delay={0.15}
-                />
-
-                {/* Connections */}
-                <SettingsMenuItem
-                  icon={Users}
-                  title="Koneksi"
-                  subtitle="Kelola koneksi Anda"
-                  gradient="from-blue-500 to-indigo-500"
-                  onClick={() => {
-                    setShowSettingsMenu(false);
-                    onNavigate('connections');
-                  }}
-                  delay={0.2}
-                />
-
-                {/* Wallet */}
-                <SettingsMenuItem
-                  icon={Wallet}
-                  title="Dompet Digital"
-                  subtitle={formatPrice(profile?.wallet_balance || 0)}
-                  gradient="from-green-500 to-emerald-500"
-                  onClick={() => {
-                    setShowSettingsMenu(false);
-                  }}
-                  delay={0.25}
-                />
-
-                {/* History */}
-                <SettingsMenuItem
-                  icon={History}
-                  title="Histori Transaksi"
-                  subtitle="Riwayat transaksi"
-                  gradient="from-orange-500 to-red-500"
-                  onClick={() => {
-                    setShowSettingsMenu(false);
-                  }}
-                  delay={0.3}
-                />
-
-                {/* Change Password */}
-                <SettingsMenuItem
-                  icon={Lock}
-                  title="Ganti Password"
-                  subtitle="Ubah password Anda"
-                  gradient="from-red-500 to-pink-500"
-                  onClick={() => {
-                    setShowSettingsMenu(false);
-                    setShowChangePasswordModal(true);
-                  }}
-                  delay={0.35}
-                />
-
-                {/* Contact Us */}
-                <SettingsMenuItem
-                  icon={Phone}
-                  title="Hubungi Kami"
-                  subtitle="Bantuan & dukungan"
-                  gradient="from-violet-500 to-purple-500"
-                  onClick={() => {
-                    setShowSettingsMenu(false);
-                    onNavigate('contact');
-                  }}
-                  delay={0.4}
-                />
-
-                {/* About Jamaah.net */}
-                <SettingsMenuItem
-                  icon={Info}
-                  title="Tentang Jamaah.net"
-                  subtitle="Visi & misi komunitas"
-                  gradient="from-teal-500 to-cyan-500"
-                  onClick={() => {
-                    setShowSettingsMenu(false);
-                    onNavigate('about');
-                  }}
-                  delay={0.45}
-                />
-
-                {/* Admin Dashboard - Only visible for Admin role */}
-                {profile?.role === 'Admin' && (
-                  <SettingsMenuItem
-                    icon={Shield}
-                    title="Admin Dashboard"
-                    subtitle="Kelola platform jamaah.net"
-                    gradient="from-amber-500 to-orange-500"
-                    onClick={() => {
-                      setShowSettingsMenu(false);
-                      onNavigate('admin-dashboard');
-                    }}
-                    delay={0.5}
-                    isHighlighted={true}
-                  />
-                )}
-
-                {/* Logout */}
-                <motion.button
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: profile?.role === 'Admin' ? 0.55 : 0.5 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={onLogout}
-                  className="w-full bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 flex items-center gap-3 border-2 border-red-200 dark:border-red-800"
-                >
-                  <div className="bg-gradient-to-br from-red-500 to-pink-500 p-3 rounded-xl">
-                    <LogOut className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="text-left flex-1">
-                    <h3 className="font-semibold text-red-600 dark:text-red-400">Keluar</h3>
-                    <p className="text-xs text-red-500 dark:text-red-400/80">Logout dari akun</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-red-400" />
-                </motion.button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Edit Profile Modal */}
-      {showEditModal && (
-        <EditProfileModal
-          session={session}
-          currentProfile={profile}
-          onClose={() => setShowEditModal(false)}
-          onSuccess={() => {
-            setShowEditModal(false);
-            fetchProfile();
-          }}
-        />
-      )}
-
-      {/* Prayer Times Settings Modal */}
-      {showPrayerTimesSettingsModal && (
-        <PrayerTimesSettingsModal
-          isOpen={showPrayerTimesSettingsModal}
-          onClose={() => setShowPrayerTimesSettingsModal(false)}
-        />
-      )}
-
-      {/* Change Password Modal */}
-      {showChangePasswordModal && (
-        <ChangePasswordModal
-          isOpen={showChangePasswordModal}
-          onClose={() => setShowChangePasswordModal(false)}
-        />
-      )}
     </div>
   );
 }
@@ -1111,11 +843,11 @@ function TwitterStylePost({
 // 3D Member Card Modal with Gyroscope Effect
 function MemberCard3DModal({
   profile,
-  session,
+  user,
   onClose,
 }: {
   profile: Profile | null;
-  session: any;
+  user: any;
   onClose: () => void;
 }) {
   const [rotateX, setRotateX] = useState(0);
@@ -1236,7 +968,7 @@ function MemberCard3DModal({
                 <div>
                   <p className="text-white/60 text-[10px] tracking-widest font-medium uppercase mb-1.5">MEMBER NAME</p>
                   <p className="text-white text-lg font-bold tracking-wide mb-2">
-                    {profile?.name || session.user.email}
+                    {profile?.name || user.email}
                   </p>
                   {/* Badges */}
                   <div className="flex items-center gap-1.5">
@@ -1256,8 +988,8 @@ function MemberCard3DModal({
                 <div className="text-right">
                   <p className="text-white/60 text-[10px] tracking-widest font-medium uppercase mb-1.5">JOINED</p>
                   <p className="text-white text-sm font-semibold">
-                    {session.user.user_metadata.joinedAt 
-                      ? new Date(session.user.user_metadata.joinedAt).toLocaleDateString('id-ID', { 
+                    {user.user_metadata?.joinedAt 
+                      ? new Date(user.user_metadata.joinedAt).toLocaleDateString('id-ID', { 
                           year: 'numeric', 
                           month: 'short' 
                         })
@@ -1300,47 +1032,5 @@ function MemberCard3DModal({
         </motion.div>
       </motion.div>
     </>
-  );
-}
-
-function SettingsMenuItem({
-  icon: Icon,
-  title,
-  subtitle,
-  gradient,
-  onClick,
-  delay,
-  isHighlighted = false,
-}: {
-  icon: React.ElementType;
-  title: string;
-  subtitle: string;
-  gradient: string;
-  onClick: () => void;
-  delay: number;
-  isHighlighted?: boolean;
-}) {
-  return (
-    <motion.button
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
-      className={`w-full rounded-2xl p-4 flex items-center gap-3 ${
-        isHighlighted
-          ? 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-2 border-amber-200 dark:border-amber-800'
-          : 'bg-gray-50 dark:bg-gray-800'
-      }`}
-    >
-      <div className={`bg-gradient-to-br ${gradient} p-3 rounded-xl`}>
-        <Icon className="w-5 h-5 text-white" />
-      </div>
-      <div className="text-left flex-1">
-        <h3 className="font-semibold text-gray-900 dark:text-white">{title}</h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
-      </div>
-      <ChevronRight className="w-5 h-5 text-gray-400" />
-    </motion.button>
   );
 }

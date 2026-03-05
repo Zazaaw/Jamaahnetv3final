@@ -412,7 +412,7 @@ export default function DynamicIslamicHeader({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 200 }}
-              className="bg-white/20 backdrop-blur-md p-3 rounded-2xl"
+              className="bg-white/20 backdrop-blur-md p-3 rounded-2xl w-14 h-14 flex items-center justify-center"
             >
               <MosqueIcon className="w-8 h-8 text-white" />
             </motion.div>
@@ -421,13 +421,16 @@ export default function DynamicIslamicHeader({
             </div>
           </div>
           <motion.button 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200 }}
             whileTap={{ scale: 0.9 }}
             onClick={onToggleNotifications}
-            className="bg-white/20 backdrop-blur-md p-3 rounded-2xl relative"
+            className="bg-white/20 backdrop-blur-md rounded-2xl w-14 h-14 flex items-center justify-center relative"
           >
-            <Bell className="w-5 h-5" />
+            <Bell className="w-6 h-6 text-white" />
             {notifications.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold">
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold border-2 border-white">
                 {notifications.length}
               </span>
             )}

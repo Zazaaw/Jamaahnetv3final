@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, DollarSign, Store, ChevronRight, Bell, Sparkles, TrendingUp, MessageCircle, ShoppingBag, Heart, Users, Plus, Bookmark, Repeat2, Share2, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Calendar, DollarSign, Store, Bell, MessageCircle, ShoppingBag, Heart, Users, Plus, Bookmark, Repeat2, Share2, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getSupabaseClient } from '../utils/supabase/client';
@@ -13,16 +13,6 @@ interface Announcement {
   content: string;
   image: string;
   created_at: number;
-}
-
-interface Article {
-  id: string;
-  title: string;
-  excerpt: string;
-  author: string;
-  created_at: number;
-  image?: string;
-  content?: string;
 }
 
 interface Notification {
@@ -56,7 +46,6 @@ export default function HomeScreen({
   onNavigate?: (screen: string, data?: any) => void;
 }) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [articles, setArticles] = useState<Article[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -64,7 +53,6 @@ export default function HomeScreen({
 
   useEffect(() => {
     fetchAnnouncements();
-    fetchArticles();
     fetchTimeline();
     if (session) {
       fetchNotifications();
@@ -94,25 +82,6 @@ export default function HomeScreen({
       setAnnouncements(data);
     } catch (error) {
       console.error('Error fetching announcements:', error);
-    }
-  };
-
-  const fetchArticles = async () => {
-    try {
-      const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from('articles')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      if (error) throw error;
-
-      if (data) {
-        setArticles(data);
-      }
-    } catch (error) {
-      console.error('Error fetching articles:', error);
     }
   };
 
@@ -397,84 +366,6 @@ export default function HomeScreen({
           />
         </motion.div>
 
-        {/* Latest Articles - Modern Card Design */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h2 className="text-xl font-bold dark:text-white flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                Artikel Terbaru
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Baca kajian dan informasi terkini</p>
-            </div>
-            <motion.button 
-              whileTap={{ scale: 0.95 }}
-              onClick={() => onNavigate?.('all-articles')}
-              className="text-emerald-600 dark:text-emerald-400 text-sm font-semibold flex items-center gap-1 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-full"
-            >
-              Semua
-              <ChevronRight className="w-4 h-4" />
-            </motion.button>
-          </div>
-          
-          <div className="space-y-3">
-            {articles.map((article, index) => (
-              <motion.div
-                key={article.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.7 + index * 0.1 }}
-                onClick={() => onNavigate?.('article-detail', article)}
-                className="card-hover bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-700/50 cursor-pointer group"
-              >
-                <div className="flex gap-4">
-                  {article.image ? (
-                    <div className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden group-hover:scale-110 transition-transform">
-                      <img 
-                        src={article.image} 
-                        alt={article.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex-shrink-0 w-20 h-20 bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                      {article.title}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">
-                      {article.excerpt}
-                    </p>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                        <div className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
-                          <span className="text-[10px]">👤</span>
-                        </div>
-                        {article.author}
-                      </span>
-                      <span className="text-gray-400 dark:text-gray-500">
-                        {new Date(article.created_at).toLocaleDateString('id-ID', { 
-                          day: 'numeric',
-                          month: 'short'
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
         {/* Timeline Kegiatan Jamaah - Twitter Style Thread */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -482,26 +373,14 @@ export default function HomeScreen({
           transition={{ delay: 0.7 }}
           className="space-y-4"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
-                <Users className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Timeline Kegiatan</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Aktivitas jamaah terkini</p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <Users className="w-5 h-5 text-white" />
             </div>
-            {session && (
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => onNavigate?.('create-timeline')}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="text-sm">Posting</span>
-              </motion.button>
-            )}
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Timeline Kegiatan</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Aktivitas jamaah terkini</p>
+            </div>
           </div>
 
           {timeline.length === 0 ? (
@@ -550,24 +429,6 @@ export default function HomeScreen({
         {/* Bottom Spacing for Tab Bar */}
         <div className="h-20" />
       </div>
-
-      {/* Floating Action Button - Fixed di pojok kanan bawah */}
-      {session && (
-        <motion.button
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 1, type: "spring", stiffness: 200 }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => onNavigate?.('create-timeline')}
-          className="fixed bottom-24 right-6 z-40 bg-gradient-to-br from-purple-500 via-pink-500 to-rose-500 text-white w-16 h-16 rounded-2xl shadow-2xl flex items-center justify-center group hover:shadow-purple-500/50 transition-all overflow-hidden"
-        >
-          {/* Glow effect on hover */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          
-          <Plus className="w-7 h-7 relative z-10 group-hover:rotate-90 transition-transform duration-300" />
-        </motion.button>
-      )}
     </div>
   );
 }

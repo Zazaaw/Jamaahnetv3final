@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Home, Calendar, Store, HeartHandshake, User } from 'lucide-react';
+import { Home, Search, Plus, MessageSquare, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Toaster } from 'sonner@2.0.3';
 import { getSupabaseClient } from './utils/supabase/client';
 import { projectId } from './utils/supabase/info';
 import { LanguageProvider } from './utils/LanguageContext';
+
+// Screen Imports
 import SplashScreen from './components/SplashScreen';
 import HomeScreen from './components/HomeScreen';
+import ExploreScreen from './components/ExploreScreen';
 import CalendarScreen from './components/CalendarScreen';
 import MarketplaceScreen from './components/MarketplaceScreen';
 import DonationScreen from './components/DonationScreen';
@@ -24,13 +27,14 @@ import TimelineDetailScreen from './components/TimelineDetailScreen';
 import ContactScreen from './components/ContactScreen';
 import AboutJamaah from './components/AboutJamaah';
 import AdminDashboard from './components/AdminDashboard';
+import PublicProfileScreen from './components/PublicProfileScreen';
 import AppFooter from './components/AppFooter';
 import InitData from './components/InitData';
 import { toast } from 'sonner';
 
 const supabase = getSupabaseClient();
 
-type Screen = 'splash' | 'home' | 'calendar' | 'marketplace' | 'donation' | 'profile' | 'auth' | 'pending-approval' | 'product-detail' | 'chat-list' | 'chat' | 'connections' | 'article-detail' | 'all-articles' | 'create-timeline' | 'timeline-detail' | 'contact' | 'about' | 'admin-dashboard';
+type Screen = 'splash' | 'home' | 'explore' | 'calendar' | 'marketplace' | 'donation' | 'profile' | 'auth' | 'pending-approval' | 'product-detail' | 'chat-list' | 'chat' | 'connections' | 'article-detail' | 'all-articles' | 'create-timeline' | 'timeline-detail' | 'contact' | 'about' | 'admin-dashboard' | 'public-profile';
 
 export default function App() {
   return (
@@ -48,6 +52,7 @@ function AppContent() {
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [selectedArticle, setSelectedArticle] = useState<any>(null);
   const [selectedTimeline, setSelectedTimeline] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
   const [editingTimeline, setEditingTimeline] = useState<any>(null);
   const [homeRefreshKey, setHomeRefreshKey] = useState(0);
   const [darkMode, setDarkMode] = useState(() => {
@@ -104,6 +109,8 @@ function AppContent() {
       setSelectedArticle(data);
     } else if (screen === 'timeline-detail') {
       setSelectedTimeline(data);
+    } else if (screen === 'public-profile') {
+      setSelectedUser(data);
     }
     setCurrentScreen(screen);
   };
@@ -356,6 +363,47 @@ function AppContent() {
     );
   }
 
+  if (currentScreen === 'public-profile' && selectedUser) {
+    return (
+      <>
+        <PublicProfileScreen 
+          session={session} 
+          user={selectedUser} 
+          onNavigate={handleNavigation}
+          onStartChat={async (recipientId) => {
+            // Create or get chat with this user
+            try {
+              const response = await fetch(
+                `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/chats`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    recipient_id: recipientId,
+                  }),
+                }
+              );
+              
+              if (response.ok) {
+                const chat = await response.json();
+                handleNavigation('chat', chat);
+              } else {
+                toast.error('Gagal memulai percakapan');
+              }
+            } catch (error) {
+              console.error('Error starting chat:', error);
+              toast.error('Gagal memulai percakapan');
+            }
+          }}
+        />
+        <Toaster position="top-center" richColors />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       <InitData />
@@ -364,6 +412,7 @@ function AppContent() {
       {/* Main Content */}
       <div className="flex-1 overflow-auto pb-20">
         {currentScreen === 'home' && <HomeScreen session={session} onNavigate={handleNavigation} key={homeRefreshKey} />}
+        {currentScreen === 'explore' && <ExploreScreen session={session} onNavigate={handleNavigation} />}
         {currentScreen === 'calendar' && <CalendarScreen session={session} />}
         {currentScreen === 'marketplace' && (
           <MarketplaceScreen 
@@ -399,31 +448,39 @@ function AppContent() {
             <div className="relative flex justify-around items-center px-2 py-3">
               <TabButton
                 icon={Home}
-                label="Masjid"
                 active={currentScreen === 'home'}
                 onClick={() => setCurrentScreen('home')}
               />
               <TabButton
-                icon={Calendar}
-                label="Kegiatan"
-                active={currentScreen === 'calendar'}
-                onClick={() => setCurrentScreen('calendar')}
+                icon={Search}
+                active={currentScreen === 'explore'}
+                onClick={() => setCurrentScreen('explore')}
               />
               <TabButton
-                icon={Store}
-                label="Pasar"
-                active={currentScreen === 'marketplace'}
-                onClick={() => setCurrentScreen('marketplace')}
+                icon={Plus}
+                active={currentScreen === 'create-timeline'}
+                onClick={() => {
+                  if (session) {
+                    setCurrentScreen('create-timeline');
+                  } else {
+                    setCurrentScreen('auth');
+                  }
+                }}
+                isCenter={true}
               />
               <TabButton
-                icon={HeartHandshake}
-                label="Donasi"
-                active={currentScreen === 'donation'}
-                onClick={() => setCurrentScreen('donation')}
+                icon={MessageSquare}
+                active={currentScreen === 'chat-list'}
+                onClick={() => {
+                  if (session) {
+                    setCurrentScreen('chat-list');
+                  } else {
+                    setCurrentScreen('auth');
+                  }
+                }}
               />
               <TabButton
                 icon={User}
-                label="Akun"
                 active={currentScreen === 'profile'}
                 onClick={() => {
                   if (session) {
@@ -443,19 +500,47 @@ function AppContent() {
 
 function TabButton({ 
   icon: Icon, 
-  label, 
   active, 
-  onClick 
+  onClick,
+  isCenter = false
 }: { 
   icon: React.ElementType; 
-  label: string; 
   active: boolean; 
   onClick: () => void;
+  isCenter?: boolean;
 }) {
+  // Special styling for center button (Plus/Create)
+  if (isCenter) {
+    return (
+      <motion.button
+        onClick={onClick}
+        className="relative flex items-center justify-center"
+        whileTap={{ scale: 0.92 }}
+        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+      >
+        {/* Gradient Circle Background for Plus Button */}
+        <motion.div
+          animate={{ 
+            scale: active ? 1.1 : 1,
+            y: active ? -2 : 0
+          }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          className="relative z-10 bg-gradient-to-br from-purple-500 to-pink-500 p-2.5 rounded-full shadow-lg"
+        >
+          <Icon 
+            className="w-6 h-6 text-white"
+            strokeWidth={2.5}
+          />
+        </motion.div>
+      </motion.button>
+    );
+  }
+
+  // Regular icon-only buttons
   return (
     <motion.button
       onClick={onClick}
-      className="relative flex flex-col items-center justify-center gap-1 px-4 py-2 min-w-[60px]"
+      className="relative flex items-center justify-center px-4 py-2"
       whileTap={{ scale: 0.92 }}
       transition={{ type: "spring", stiffness: 400, damping: 17 }}
     >
@@ -483,7 +568,7 @@ function TabButton({
         className="relative z-10"
       >
         <Icon 
-          className={`w-5 h-5 transition-colors duration-200 ${
+          className={`w-6 h-6 transition-colors duration-200 ${
             active 
               ? 'text-emerald-600 dark:text-emerald-400' 
               : 'text-gray-500 dark:text-gray-400'
@@ -491,35 +576,6 @@ function TabButton({
           strokeWidth={active ? 2.5 : 2}
         />
       </motion.div>
-      
-      {/* Label with fade animation */}
-      <motion.span
-        animate={{ 
-          opacity: active ? 1 : 0.7,
-          y: active ? 0 : 1
-        }}
-        transition={{ duration: 0.2 }}
-        className={`relative z-10 text-[10px] transition-colors duration-200 ${
-          active 
-            ? 'text-emerald-600 dark:text-emerald-400' 
-            : 'text-gray-500 dark:text-gray-400'
-        }`}
-      >
-        {label}
-      </motion.span>
-      
-      {/* Active indicator dot */}
-      <AnimatePresence>
-        {active && (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            className="absolute -top-1 w-1 h-1 bg-emerald-500 dark:bg-emerald-400 rounded-full"
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-          />
-        )}
-      </AnimatePresence>
     </motion.button>
   );
 }
