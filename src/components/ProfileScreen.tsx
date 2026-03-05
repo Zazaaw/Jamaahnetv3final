@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { User, Wallet, MessageSquare, History, LogOut, ChevronRight, Edit, Moon, Sun, Settings, Sparkles, Users, Clock, Menu, X, Grid, Heart, MessageCircle, Bookmark, CreditCard, Lock, Phone, Shield, Info, ShoppingBag, Languages } from 'lucide-react';
+import { User, Wallet, MessageSquare, History, LogOut, ChevronRight, Edit, Moon, Sun, Settings, Sparkles, Users, Clock, Menu, X, Grid, Heart, MessageCircle, Bookmark, CreditCard, Lock, Phone, Shield, Info, ShoppingBag, Languages, Repeat2, Share2, MoreVertical, Trash2, Award, Share } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSupabaseClient } from '../utils/supabase/client';
+import { projectId } from '../utils/supabase/info';
 import EditProfileModal from './EditProfileModal';
 import PrayerTimesSettingsModal from './PrayerTimesSettingsModal';
 import ChangePasswordModal from './ChangePasswordModal';
@@ -29,7 +30,7 @@ export default function ProfileScreen({
   onToggleDarkMode 
 }: { 
   session: any;
-  onNavigate: (screen: string) => void;
+  onNavigate: (screen: string, data?: any) => void;
   onLogout: () => void;
   darkMode: boolean;
   onToggleDarkMode: () => void;
@@ -40,9 +41,10 @@ export default function ProfileScreen({
   const [showPrayerTimesSettingsModal, setShowPrayerTimesSettingsModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [showMemberCardModal, setShowMemberCardModal] = useState(false);
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [userProducts, setUserProducts] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'posts' | 'market'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'market' | 'media'>('posts');
   
   const supabase = getSupabaseClient();
 
@@ -77,15 +79,20 @@ export default function ProfileScreen({
       
       const { data, error } = await supabase
         .from('timeline_posts')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            name,
+            avatar_url
+          )
+        `)
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
       if (data) {
-        // Map any necessary fields if needed, though mostly direct mapping should work
-        // Ensuring image_url maps to image property if UI expects 'image'
         const mappedPosts = data.map((post: any) => ({
           ...post,
           image: post.image_url || post.image
@@ -125,15 +132,16 @@ export default function ProfileScreen({
     }).format(price);
   };
 
-  // Fallback for unauthenticated users (should never reach here due to App.tsx interception)
+  // Fallback for unauthenticated users
   if (!session) {
     return null;
   }
 
   // Stats calculation
-  const totalConnections = 0; // Would be from API
+  const totalConnections = 0;
   const totalPosts = userPosts.length;
   const totalLikes = userPosts.reduce((sum, post) => sum + (post.likes?.length || 0), 0);
+  const mediaPosts = userPosts.filter(post => post.image);
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
@@ -142,14 +150,14 @@ export default function ProfileScreen({
         <IslamicPattern className="text-purple-600 dark:text-purple-400 opacity-[0.015]" />
       </div>
 
-      {/* Top Bar - Instagram Style */}
+      {/* Top Bar - Minimalist */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4"
       >
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold dark:text-white">{profile?.name || session.user.email}</h1>
+          <h1 className="text-xl font-bold dark:text-white">Profil</h1>
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setShowSettingsMenu(true)}
@@ -160,150 +168,134 @@ export default function ProfileScreen({
         </div>
       </motion.div>
 
-      {/* Profile Section - Instagram Style */}
+      {/* Profile Section - Threads Style */}
       <div className="relative z-10 px-6 pt-6">
-        {/* Avatar and Stats */}
-        <div className="flex items-center gap-6 mb-6">
-          {/* Avatar */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 200 }}
-            className="relative"
-          >
-            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gradient-to-br from-purple-500 to-pink-500 p-0.5 bg-gradient-to-br from-purple-500 to-pink-500">
-              <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-900">
-                {profile?.avatar_url ? (
-                  <img 
-                    src={profile.avatar_url} 
-                    alt={profile.name} 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 flex items-center justify-center">
-                    <User className="w-12 h-12 text-purple-600 dark:text-purple-400" />
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Stats */}
-          <div className="flex-1 grid grid-cols-3 gap-2">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-center"
-            >
-              <div className="text-xl font-bold dark:text-white">{totalPosts}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Postingan</div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="text-center cursor-pointer"
-              onClick={() => onNavigate('connections')}
-            >
-              <div className="text-xl font-bold dark:text-white">{totalConnections}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Koneksi</div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-center"
-            >
-              <div className="text-xl font-bold dark:text-white">{totalLikes}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Likes</div>
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Bio Section */}
+        {/* Header: Name/Username on Left, Avatar on Right */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
+          transition={{ delay: 0.1 }}
+          className="flex items-start justify-between mb-4"
+        >
+          {/* Left: Name & Username */}
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold dark:text-white mb-1">
+              {profile?.name || 'User'}
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              @{profile?.email?.split('@')[0] || session.user.email?.split('@')[0]}
+            </p>
+          </div>
+
+          {/* Right: Avatar */}
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200, delay: 0.15 }}
+            className="flex-shrink-0"
+          >
+            <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700">
+              {profile?.avatar_url ? (
+                <img 
+                  src={profile.avatar_url} 
+                  alt={profile.name} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 flex items-center justify-center">
+                  <User className="w-10 h-10 text-purple-600 dark:text-purple-400" />
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+
+        {/* Bio */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
           className="mb-4"
         >
-          <h2 className="font-semibold dark:text-white mb-1">{profile?.name}</h2>
           {profile?.bio && (
-            <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{profile.bio}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+              {profile.bio}
+            </p>
           )}
           {profile?.mosque && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
               <MosqueIcon className="w-4 h-4" />
               <span>{profile.mosque}</span>
             </div>
           )}
-          {profile?.role && (
-            <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 rounded-full text-xs font-semibold text-purple-700 dark:text-purple-300">
-              <Sparkles className="w-3 h-3" />
-              {profile.role}
-            </div>
-          )}
         </motion.div>
 
-        {/* Member ID Card */}
-        {profile?.member_id && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.28 }}
-            className="mb-4 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-2xl p-4 shadow-lg relative overflow-hidden"
-          >
-            {/* Islamic Pattern Background */}
-            <div className="absolute inset-0 opacity-10">
-              <IslamicPattern className="text-white" />
+        {/* Badges - Horizontal Scroll */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide"
+        >
+          {/* Role Badge */}
+          {profile?.role && (
+            <div className="flex-shrink-0 border border-gray-300 dark:border-gray-700 rounded-full px-4 py-1.5 text-sm font-medium flex items-center gap-2 bg-white dark:bg-gray-900">
+              <Award className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <span className="dark:text-white">{profile.role}</span>
             </div>
-            
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="bg-white/20 backdrop-blur-md p-2 rounded-lg">
-                    <CreditCard className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-white/90 text-xs font-semibold">ID Member</span>
-                </div>
-                <div className="text-white/80 text-[10px] font-medium">
-                  {session.user.user_metadata.joinedAt 
-                    ? new Date(session.user.user_metadata.joinedAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'short' })
-                    : 'Jamaah.net'
-                  }
-                </div>
-              </div>
-              
-              <div className="bg-white/20 backdrop-blur-md rounded-xl p-3 border border-white/30">
-                <div className="font-mono text-2xl font-bold text-white tracking-wider text-center">
-                  {profile.member_id}
-                </div>
-              </div>
-              
-              <div className="mt-2 flex items-center justify-between">
-                <span className="text-white/80 text-xs">{profile?.name || session.user.email}</span>
-                <div className="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full">
-                  <span className="text-white text-[10px] font-semibold">VERIFIED</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
+          )}
 
-        {/* Edit Profile Button */}
-        <motion.button
+          {/* Member Card Badge */}
+          {profile?.member_id && (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowMemberCardModal(true)}
+              className="flex-shrink-0 border border-gray-300 dark:border-gray-700 rounded-full px-4 py-1.5 text-sm font-medium flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="dark:text-white">Kartu Member</span>
+            </motion.button>
+          )}
+
+          {/* Stats Badges */}
+          <div className="flex-shrink-0 border border-gray-300 dark:border-gray-700 rounded-full px-4 py-1.5 text-sm font-medium flex items-center gap-2 bg-white dark:bg-gray-900">
+            <Grid className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            <span className="dark:text-white">{totalPosts} Postingan</span>
+          </div>
+
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onNavigate('connections')}
+            className="flex-shrink-0 border border-gray-300 dark:border-gray-700 rounded-full px-4 py-1.5 text-sm font-medium flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <span className="dark:text-white">{totalConnections} Koneksi</span>
+          </motion.button>
+        </motion.div>
+
+        {/* Action Buttons - 2 Column Grid */}
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => setShowEditModal(true)}
-          className="w-full bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white py-2 rounded-xl font-semibold text-sm mb-6 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          className="grid grid-cols-2 gap-3 mb-6"
         >
-          Edit Profil
-        </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowEditModal(true)}
+            className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+          >
+            Edit Profil
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            Bagikan Profil
+          </motion.button>
+        </motion.div>
 
-        {/* Tabs */}
+        {/* Navigation Tabs - Minimalist Text-Based */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -312,29 +304,40 @@ export default function ProfileScreen({
         >
           <button
             onClick={() => setActiveTab('posts')}
-            className={`flex-1 py-3 flex items-center justify-center gap-2 border-t-2 transition-colors ${
+            className={`flex-1 py-3 text-sm font-semibold transition-all ${
               activeTab === 'posts'
-                ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white'
-                : 'border-transparent text-gray-400 dark:text-gray-500'
+                ? 'text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white'
+                : 'text-gray-400 dark:text-gray-500 border-b-2 border-transparent'
             }`}
           >
-            <Grid className="w-5 h-5" />
+            Postingan
           </button>
           <button
             onClick={() => setActiveTab('market')}
-            className={`flex-1 py-3 flex items-center justify-center gap-2 border-t-2 transition-colors ${
+            className={`flex-1 py-3 text-sm font-semibold transition-all ${
               activeTab === 'market'
-                ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white'
-                : 'border-transparent text-gray-400 dark:text-gray-500'
+                ? 'text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white'
+                : 'text-gray-400 dark:text-gray-500 border-b-2 border-transparent'
             }`}
           >
-            <ShoppingBag className="w-5 h-5" />
+            Pasar
+          </button>
+          <button
+            onClick={() => setActiveTab('media')}
+            className={`flex-1 py-3 text-sm font-semibold transition-all ${
+              activeTab === 'media'
+                ? 'text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white'
+                : 'text-gray-400 dark:text-gray-500 border-b-2 border-transparent'
+            }`}
+          >
+            Media
           </button>
         </motion.div>
       </div>
 
-      {/* Posts Grid - Instagram Style */}
+      {/* Feed Sections */}
       <div className="relative z-10 px-6 pb-24">
+        {/* Posts Tab - Twitter Style */}
         {activeTab === 'posts' && (
           <>
             {userPosts.length === 0 ? (
@@ -355,49 +358,23 @@ export default function ProfileScreen({
                 </p>
               </motion.div>
             ) : (
-              <div className="grid grid-cols-3 gap-1 mt-1">
+              <div className="space-y-3 mt-3">
                 {userPosts.map((post, index) => (
-                  <motion.div
+                  <TwitterStylePost
                     key={post.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.4 + index * 0.05 }}
-                    onClick={() => onNavigate('timeline-detail', post)}
-                    className="aspect-square cursor-pointer group relative overflow-hidden bg-gray-100 dark:bg-gray-800"
-                  >
-                    {post.image ? (
-                      <>
-                        <img
-                          src={post.image}
-                          alt={post.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                          <div className="flex items-center gap-1 text-white">
-                            <Heart className="w-5 h-5" fill="white" />
-                            <span className="font-semibold">{post.likes?.length || 0}</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-white">
-                            <MessageCircle className="w-5 h-5" fill="white" />
-                            <span className="font-semibold">{post.comments?.length || 0}</span>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center p-3">
-                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 line-clamp-4 text-center">
-                          {post.title}
-                        </p>
-                      </div>
-                    )}
-                  </motion.div>
+                    post={post}
+                    session={session}
+                    onNavigate={onNavigate}
+                    onRefresh={fetchUserPosts}
+                    delay={0.4 + index * 0.05}
+                  />
                 ))}
               </div>
             )}
           </>
         )}
 
+        {/* Market Tab */}
         {activeTab === 'market' && (
           <>
             {userProducts.length === 0 ? (
@@ -475,9 +452,74 @@ export default function ProfileScreen({
             )}
           </>
         )}
+
+        {/* Media Tab - Instagram Grid */}
+        {activeTab === 'media' && (
+          <>
+            {mediaPosts.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-center py-16"
+              >
+                <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Grid className="w-10 h-10 text-gray-400 dark:text-gray-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  Belum ada media
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Postingan dengan foto akan muncul di sini
+                </p>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-3 gap-1 mt-1">
+                {mediaPosts.map((post, index) => (
+                  <motion.div
+                    key={post.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.4 + index * 0.05 }}
+                    onClick={() => onNavigate('timeline-detail', post)}
+                    className="aspect-square cursor-pointer group relative overflow-hidden bg-gray-100 dark:bg-gray-800"
+                  >
+                    <img
+                      src={post.image}
+                      alt={post.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                      <div className="flex items-center gap-1 text-white">
+                        <Heart className="w-5 h-5" fill="white" />
+                        <span className="font-semibold">{post.likes?.length || 0}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-white">
+                        <MessageCircle className="w-5 h-5" fill="white" />
+                        <span className="font-semibold">{post.comments?.length || 0}</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
-      {/* Settings Menu - Hamburger Style */}
+      {/* 3D Member Card Modal */}
+      <AnimatePresence>
+        {showMemberCardModal && (
+          <MemberCard3DModal
+            profile={profile}
+            session={session}
+            onClose={() => setShowMemberCardModal(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Settings Menu */}
       <AnimatePresence>
         {showSettingsMenu && (
           <>
@@ -709,7 +751,7 @@ export default function ProfileScreen({
         />
       )}
 
-      {/* Floating Inbox Button - Like Timeline Add Button */}
+      {/* Floating Inbox Button */}
       <motion.button
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -732,7 +774,7 @@ export default function ProfileScreen({
         <div className="relative w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 rounded-full shadow-2xl flex items-center justify-center border-4 border-white dark:border-gray-900 transition-all">
           <MessageSquare className="w-6 h-6 text-white" />
           
-          {/* Notification Badge (optional - can be connected to unread count) */}
+          {/* Notification Badge */}
           <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 shadow-lg">
             <span className="text-[10px] font-bold text-white">3</span>
           </div>
@@ -742,6 +784,555 @@ export default function ProfileScreen({
         <span className="absolute inset-0 rounded-full bg-cyan-500 opacity-0 group-hover:opacity-20 group-hover:animate-ping"></span>
       </motion.button>
     </div>
+  );
+}
+
+// Twitter-style Post Component
+function TwitterStylePost({
+  post,
+  session,
+  onNavigate,
+  onRefresh,
+  delay,
+}: {
+  post: any;
+  session: any;
+  onNavigate?: (screen: string, data?: any) => void;
+  onRefresh: () => void;
+  delay: number;
+}) {
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [likes, setLikes] = useState<string[]>(post.likes || []);
+  const [isLiked, setIsLiked] = useState(false);
+  const [comments, setComments] = useState<any[]>(post.comments || []);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdminMenu, setShowAdminMenu] = useState(false);
+
+  useEffect(() => {
+    setLikes(post.likes || []);
+    setComments(post.comments || []);
+    
+    if (session) {
+      setIsLiked((post.likes || []).includes(session.user.id));
+      fetchUserRole();
+      fetchBookmarkStatus();
+    }
+  }, [post.id, post.likes, post.comments, session]);
+
+  const fetchUserRole = async () => {
+    if (!session) return;
+    
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/profile`,
+        {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        }
+      );
+      
+      if (response.ok) {
+        const profile = await response.json();
+        setIsAdmin(profile.role === 'Admin');
+      }
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+    }
+  };
+
+  const fetchBookmarkStatus = async () => {
+    if (!session) return;
+    
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/timeline/bookmarks/list`,
+        {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        }
+      );
+      
+      if (response.ok) {
+        const bookmarkedPosts = await response.json();
+        const isBookmarked = bookmarkedPosts.some((p: any) => p.id === post.id);
+        setIsBookmarked(isBookmarked);
+      }
+    } catch (error) {
+      console.error('Error fetching bookmark status:', error);
+    }
+  };
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!session) return;
+
+    const newIsLiked = !isLiked;
+    const newLikes = newIsLiked 
+      ? [...likes, session.user.id]
+      : likes.filter(id => id !== session.user.id);
+    
+    setIsLiked(newIsLiked);
+    setLikes(newLikes);
+
+    try {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase
+        .from('timeline_posts')
+        .update({ likes: newLikes })
+        .eq('id', post.id);
+
+      if (error) {
+        console.error('Error toggling like:', error);
+        setIsLiked(!newIsLiked);
+        setLikes(likes);
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      setIsLiked(!newIsLiked);
+      setLikes(likes);
+    }
+  };
+
+  const handleBookmark = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!session) return;
+
+    const newIsBookmarked = !isBookmarked;
+    setIsBookmarked(newIsBookmarked);
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/timeline/${post.id}/bookmark`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsBookmarked(data.isBookmarked);
+      } else {
+        setIsBookmarked(!newIsBookmarked);
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      setIsBookmarked(!newIsBookmarked);
+    }
+  };
+
+  const handleDeletePost = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!session) return;
+
+    if (!confirm('Yakin ingin menghapus postingan ini?')) return;
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/timeline/${post.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        onRefresh();
+      } else {
+        console.error('Failed to delete post:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      onClick={() => onNavigate?.('timeline-detail', post)}
+      className="bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700/50 p-5 hover:shadow-xl dark:hover:bg-gray-800/70 transition-all cursor-pointer group overflow-hidden"
+    >
+      <div className="flex gap-3">
+        {/* Avatar */}
+        <div className="flex-shrink-0">
+          {post.profiles?.avatar_url ? (
+            <img 
+              src={post.profiles.avatar_url} 
+              alt={post.profiles.name} 
+              className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+            />
+          ) : (
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold">
+                {(post.profiles?.name || post.user_name || '?')[0].toUpperCase()}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Header */}
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-bold text-gray-900 dark:text-white hover:underline">
+              {post.profiles?.name || post.user_name || 'Unknown User'}
+            </span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
+              · {new Date(post.created_at).toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+              })}
+            </span>
+            {post.is_approved === false && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full text-xs font-semibold">
+                ⏳ Menunggu Approve
+              </span>
+            )}
+          </div>
+
+          {/* Title & Content */}
+          <div className="mb-3">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+              {post.title}
+            </h3>
+            <p className="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap">
+              {post.content}
+            </p>
+          </div>
+
+          {/* Image */}
+          {post.image && (
+            <div className="mb-3 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
+              <img
+                src={post.image}
+                alt={post.title}
+                className="w-full max-h-96 object-cover"
+              />
+            </div>
+          )}
+
+          {/* Actions - Twitter Style */}
+          <div className="flex items-center justify-between max-w-md mt-2">
+            {/* Comment */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigate?.('timeline-detail', post);
+              }}
+              className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors group/btn"
+            >
+              <div className="p-2 rounded-full group-hover/btn:bg-blue-50 dark:group-hover/btn:bg-blue-900/20 transition-colors">
+                <MessageCircle className="w-5 h-5" />
+              </div>
+              <span className="text-sm">{comments.length || 0}</span>
+            </motion.button>
+
+            {/* Retweet (disabled) */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              className="flex items-center gap-2 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+            >
+              <div className="p-2 rounded-full transition-colors">
+                <Repeat2 className="w-5 h-5" />
+              </div>
+              <span className="text-sm">0</span>
+            </motion.button>
+
+            {/* Like */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleLike}
+              className={`flex items-center gap-2 transition-colors group/btn ${
+                isLiked
+                  ? 'text-pink-500 dark:text-pink-400'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-pink-500 dark:hover:text-pink-400'
+              }`}
+            >
+              <div className="p-2 rounded-full group-hover/btn:bg-pink-50 dark:group-hover/btn:bg-pink-900/20 transition-colors">
+                <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+              </div>
+              <span className="text-sm">{likes.length}</span>
+            </motion.button>
+
+            {/* Bookmark */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleBookmark}
+              className={`flex items-center gap-2 transition-colors group/btn ${
+                isBookmarked
+                  ? 'text-emerald-500 dark:text-emerald-400'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400'
+              }`}
+            >
+              <div className="p-2 rounded-full group-hover/btn:bg-emerald-50 dark:group-hover/btn:bg-emerald-900/20 transition-colors">
+                <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
+              </div>
+            </motion.button>
+
+            {/* Share (disabled) */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              className="flex items-center gap-2 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+            >
+              <div className="p-2 rounded-full transition-colors">
+                <Share2 className="w-5 h-5" />
+              </div>
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Admin 3-Dots Menu */}
+        {isAdmin && (
+          <div className="relative flex-shrink-0 ml-2">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAdminMenu(!showAdminMenu);
+              }}
+              className="p-2 text-gray-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl transition-colors"
+            >
+              <MoreVertical className="w-5 h-5" />
+            </motion.button>
+
+            <AnimatePresence>
+              {showAdminMenu && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-30" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowAdminMenu(false);
+                    }}
+                  />
+                  
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-10 right-0 bg-white dark:bg-gray-800 rounded-xl shadow-2xl py-2 w-40 z-40 border border-gray-200 dark:border-gray-700"
+                  >
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={handleDeletePost}
+                      className="w-full px-4 py-2 text-left flex items-center gap-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="text-sm font-medium">Hapus</span>
+                    </motion.button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// 3D Member Card Modal with Gyroscope Effect
+function MemberCard3DModal({
+  profile,
+  session,
+  onClose,
+}: {
+  profile: Profile | null;
+  session: any;
+  onClose: () => void;
+}) {
+  const [rotateX, setRotateX] = useState(0);
+  const [rotateY, setRotateY] = useState(0);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    const rotateXValue = ((y - centerY) / centerY) * -10;
+    const rotateYValue = ((x - centerX) / centerX) * 10;
+    
+    setRotateX(rotateXValue);
+    setRotateY(rotateYValue);
+  };
+
+  const handleMouseLeave = () => {
+    setRotateX(0);
+    setRotateY(0);
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-6"
+      >
+        {/* Card Container */}
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.8, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 200, damping: 20 }}
+          onClick={(e) => e.stopPropagation()}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          style={{
+            perspective: 1000,
+            transformStyle: 'preserve-3d',
+          }}
+          className="max-w-md w-full"
+        >
+          {/* 3D Card */}
+          <motion.div
+            animate={{
+              rotateX: rotateX,
+              rotateY: rotateY,
+            }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            style={{
+              transformStyle: 'preserve-3d',
+            }}
+            className="relative aspect-[1.6/1] rounded-3xl overflow-hidden shadow-2xl"
+          >
+            {/* Card Background with Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-500">
+              {/* Animated Gradient Overlay */}
+              <motion.div
+                animate={{
+                  backgroundPosition: ['0% 0%', '100% 100%'],
+                }}
+                transition={{
+                  duration: 10,
+                  repeat: Infinity,
+                  repeatType: 'reverse',
+                }}
+                className="absolute inset-0 bg-gradient-to-br from-emerald-300/50 via-transparent to-cyan-400/50"
+                style={{
+                  backgroundSize: '200% 200%',
+                }}
+              />
+              
+              {/* Islamic Pattern */}
+              <div className="absolute inset-0 opacity-10">
+                <IslamicPattern className="text-white" />
+              </div>
+
+              {/* Glassmorphic Overlay */}
+              <div className="absolute inset-0 bg-white/5 backdrop-blur-[1px]" />
+            </div>
+
+            {/* Card Content - Apple Card Style */}
+            <div className="relative z-10 p-8 h-full flex flex-col justify-between">
+              {/* Top Row - Header */}
+              <div className="flex items-start justify-between">
+                {/* Left: Icon + Brand */}
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-white" />
+                  <p className="text-white text-sm font-bold tracking-wide">JAMAAH.NET</p>
+                </div>
+                
+                {/* Right: Verified Badge */}
+                <div className="bg-white/20 backdrop-blur-sm border border-white/30 px-3 py-1 rounded-full">
+                  <span className="text-white text-[10px] font-bold tracking-wide">VERIFIED</span>
+                </div>
+              </div>
+
+              {/* Middle Row - Member ID (Centered) */}
+              <div className="flex flex-col items-center justify-center">
+                <p className="text-white/60 text-[10px] tracking-widest font-medium uppercase mb-3">MEMBER ID</p>
+                <p className="font-mono text-4xl font-bold text-white tracking-widest drop-shadow-md">
+                  {profile?.member_id || 'JM-202401-XXXX'}
+                </p>
+              </div>
+
+              {/* Bottom Row - Footer */}
+              <div className="flex items-end justify-between">
+                {/* Left: Member Info */}
+                <div>
+                  <p className="text-white/60 text-[10px] tracking-widest font-medium uppercase mb-1.5">MEMBER NAME</p>
+                  <p className="text-white text-lg font-bold tracking-wide mb-2">
+                    {profile?.name || session.user.email}
+                  </p>
+                  {/* Badges */}
+                  <div className="flex items-center gap-1.5">
+                    <div className="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/20">
+                      {profile?.role || 'Member'}
+                    </div>
+                    {profile?.mosque && (
+                      <div className="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/20 flex items-center gap-1">
+                        <MosqueIcon className="w-2.5 h-2.5" />
+                        <span>{profile.mosque}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Right: Joined Date */}
+                <div className="text-right">
+                  <p className="text-white/60 text-[10px] tracking-widest font-medium uppercase mb-1.5">JOINED</p>
+                  <p className="text-white text-sm font-semibold">
+                    {session.user.user_metadata.joinedAt 
+                      ? new Date(session.user.user_metadata.joinedAt).toLocaleDateString('id-ID', { 
+                          year: 'numeric', 
+                          month: 'short' 
+                        })
+                      : new Date().toLocaleDateString('id-ID', { 
+                          year: 'numeric', 
+                          month: 'short' 
+                        })
+                    }
+                  </p>
+                </div>
+              </div>
+
+              {/* Holographic Effect */}
+              <motion.div
+                animate={{
+                  backgroundPosition: ['0% 0%', '100% 100%'],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  repeatType: 'reverse',
+                }}
+                className="absolute inset-0 opacity-30 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%)',
+                  backgroundSize: '200% 200%',
+                }}
+              />
+            </div>
+          </motion.div>
+
+          {/* Close Button */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={onClose}
+            className="mt-6 mx-auto block bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-6 py-3 rounded-2xl font-semibold shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            Tutup
+          </motion.button>
+        </motion.div>
+      </motion.div>
+    </>
   );
 }
 
@@ -769,32 +1360,20 @@ function SettingsMenuItem({
       transition={{ delay }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className={`relative w-full bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-        isHighlighted ? 'ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-gray-900 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20' : ''
+      className={`w-full rounded-2xl p-4 flex items-center gap-3 ${
+        isHighlighted
+          ? 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-2 border-amber-200 dark:border-amber-800'
+          : 'bg-gray-50 dark:bg-gray-800'
       }`}
     >
-      {isHighlighted && (
-        <div className="absolute -top-2 -right-2 z-10">
-          <div className="relative">
-            <div className="absolute inset-0 bg-amber-500 rounded-full animate-ping opacity-75"></div>
-            <div className="relative bg-gradient-to-br from-amber-500 to-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">
-              ADMIN
-            </div>
-          </div>
-        </div>
-      )}
-      <div className={`bg-gradient-to-br ${gradient} p-3 rounded-xl ${isHighlighted ? 'shadow-lg shadow-amber-500/50' : ''}`}>
+      <div className={`bg-gradient-to-br ${gradient} p-3 rounded-xl`}>
         <Icon className="w-5 h-5 text-white" />
       </div>
       <div className="text-left flex-1">
-        <h3 className={`font-semibold ${isHighlighted ? 'text-amber-700 dark:text-amber-400' : 'text-gray-900 dark:text-white'}`}>
-          {title}
-        </h3>
-        <p className={`text-xs ${isHighlighted ? 'text-amber-600 dark:text-amber-500' : 'text-gray-500 dark:text-gray-400'}`}>
-          {subtitle}
-        </p>
+        <h3 className="font-semibold text-gray-900 dark:text-white">{title}</h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
       </div>
-      <ChevronRight className={`w-5 h-5 ${isHighlighted ? 'text-amber-500' : 'text-gray-400 dark:text-gray-500'}`} />
+      <ChevronRight className="w-5 h-5 text-gray-400" />
     </motion.button>
   );
 }
