@@ -15,6 +15,155 @@ interface PrayerTime {
   time: string;
 }
 
+// =========================================================================
+// ⛅ KOMPONEN AWAN KITA KELUARIN KE SINI BIAR GAK KE-RESET TIAP DETIK
+// =========================================================================
+const CloudAnimation = ({
+  isSunset,
+}: {
+  isSunset: boolean;
+}) => {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Matahari Bercahaya */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 2, ease: "easeOut" }}
+        className={`absolute ${
+          isSunset
+            ? "top-20 right-16 w-24 h-24 bg-gradient-to-br from-orange-200 to-orange-500 shadow-[0_0_70px_30px_rgba(251,146,60,0.5)]"
+            : "top-10 right-20 w-32 h-32 bg-gradient-to-br from-yellow-100 to-yellow-300 shadow-[0_0_70px_30px_rgba(253,224,71,0.5)]"
+        } rounded-full`}
+      />
+
+      {/* Awan Fluffy ala iOS */}
+      {[...Array(5)].map((_, i) => (
+        <motion.div
+          key={`cloud-${i}`}
+          animate={{ x: ["-50vw", "150vw"] }}
+          transition={{
+            duration: 60 + i * 20,
+            repeat: Infinity,
+            ease: "linear",
+            delay: -(i * 35),
+          }}
+          className="absolute flex items-center justify-center"
+          style={{
+            top: `${5 + i * 15}%`,
+            opacity: isSunset ? 0.25 : 0.4,
+            scale: 0.5 + i * 0.15,
+          }}
+        >
+          <div className="relative w-72 h-24">
+            <div className="absolute bottom-0 w-full h-12 bg-white rounded-full blur-[16px]" />
+            <div className="absolute bottom-4 left-8 w-24 h-24 bg-white rounded-full blur-[16px]" />
+            <div className="absolute bottom-2 left-28 w-28 h-28 bg-white rounded-full blur-[16px]" />
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+};
+
+// =========================================================================
+// 🌙 KOMPONEN BINTANG JUGA KITA KELUARIN KE SINI
+// =========================================================================
+const StarAnimation = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    {/* Bulan Purnama */}
+    <motion.div
+      animate={{
+        y: [0, -8, 0],
+        boxShadow: [
+          "0 0 60px 15px rgba(219,234,254,0.1)",
+          "0 0 80px 25px rgba(219,234,254,0.2)",
+          "0 0 60px 15px rgba(219,234,254,0.1)",
+        ],
+      }}
+      transition={{
+        duration: 6,
+        repeat: Infinity,
+        ease: "easeInOut",
+      }}
+      className="absolute top-12 right-12 w-20 h-20 bg-gradient-to-br from-indigo-50 to-blue-200 rounded-full"
+    />
+
+    {/* Bintang Kelap-kelip */}
+    {[...Array(40)].map((_, i) => {
+      const size = Math.random() * 2.5 + 1;
+      return (
+        <motion.div
+          key={`star-${i}`}
+          className="absolute bg-white rounded-full blur-[1px]"
+          style={{
+            width: size,
+            height: size,
+            top: `${Math.random() * 100}%`,
+            left: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            opacity: [0.1, 0.9, 0.1],
+            scale: [1, 1.3, 1],
+          }}
+          transition={{
+            duration: Math.random() * 4 + 2,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: Math.random() * 5,
+          }}
+        />
+      );
+    })}
+
+    {/* Awan Malam Tipis */}
+    {[...Array(3)].map((_, i) => (
+      <motion.div
+        key={`night-cloud-${i}`}
+        animate={{ x: ["-50vw", "150vw"] }}
+        transition={{
+          duration: 90 + i * 30,
+          repeat: Infinity,
+          ease: "linear",
+          delay: -(i * 40),
+        }}
+        className="absolute flex items-center justify-center"
+        style={{
+          top: `${10 + i * 25}%`,
+          opacity: 0.08,
+          scale: 0.6 + i * 0.2,
+        }}
+      >
+        <div className="relative w-72 h-24">
+          <div className="absolute bottom-0 w-full h-12 bg-indigo-200 rounded-full blur-[20px]" />
+          <div className="absolute bottom-4 left-8 w-24 h-24 bg-indigo-200 rounded-full blur-[20px]" />
+          <div className="absolute bottom-2 left-28 w-28 h-28 bg-indigo-200 rounded-full blur-[20px]" />
+        </div>
+      </motion.div>
+    ))}
+
+    {/* Bintang Jatuh */}
+    <motion.div
+      className="absolute w-32 h-[2px] bg-gradient-to-r from-transparent via-white to-transparent blur-[1px]"
+      style={{ top: "10%", right: "10%", rotate: "-35deg" }}
+      animate={{
+        x: ["10vw", "-100vw"],
+        y: ["-10vh", "100vh"],
+        opacity: [0, 1, 0],
+      }}
+      transition={{
+        duration: 1.5,
+        repeat: Infinity,
+        repeatDelay: 12,
+        ease: "linear",
+      }}
+    />
+  </div>
+);
+
+// =========================================================================
+// 🚀 KOMPONEN UTAMA (HEADER)
+// =========================================================================
 export default function DynamicIslamicHeader({
   notifications,
   showNotifications,
@@ -23,7 +172,6 @@ export default function DynamicIslamicHeader({
 }: DynamicIslamicHeaderProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // GPS & Prayer Times State
   const [locationName, setLocationName] = useState(
     "Mendeteksi lokasi...",
   );
@@ -37,11 +185,9 @@ export default function DynamicIslamicHeader({
   const [timeRemaining, setTimeRemaining] =
     useState("--:--:--");
 
-  // Dynamic Sky Logic
   const getDynamicSkyTheme = () => {
     const hour = currentTime.getHours();
     if (hour >= 19 || hour < 4) {
-      // Night
       return {
         bgClasses: "from-slate-900 via-indigo-950 to-slate-900",
         textClass: "text-white",
@@ -50,7 +196,6 @@ export default function DynamicIslamicHeader({
         glassBorder: "border-white/10",
       };
     } else if (hour >= 4 && hour < 6) {
-      // Dawn
       return {
         bgClasses:
           "from-indigo-900 via-purple-800 to-orange-500",
@@ -60,7 +205,6 @@ export default function DynamicIslamicHeader({
         glassBorder: "border-white/20",
       };
     } else if (hour >= 6 && hour < 16) {
-      // Day
       return {
         bgClasses: "from-blue-500 via-sky-400 to-sky-200",
         textClass: "text-gray-900",
@@ -69,7 +213,6 @@ export default function DynamicIslamicHeader({
         glassBorder: "border-white/40",
       };
     } else {
-      // Sunset (16 - 19)
       return {
         bgClasses: "from-blue-900 via-orange-600 to-red-500",
         textClass: "text-white",
@@ -81,6 +224,10 @@ export default function DynamicIslamicHeader({
   };
 
   const theme = getDynamicSkyTheme();
+  // Cek untuk di passing ke awan
+  const isSunset =
+    theme.bgClasses.includes("orange") ||
+    theme.bgClasses.includes("red");
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -89,7 +236,6 @@ export default function DynamicIslamicHeader({
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch Location & Prayer Times with Fallback
   useEffect(() => {
     let isMounted = true;
 
@@ -99,7 +245,6 @@ export default function DynamicIslamicHeader({
       isFallback = false,
     ) => {
       try {
-        // Reverse Geocoding
         if (!isFallback) {
           const geoRes = await fetch(
             `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=id`,
@@ -117,7 +262,6 @@ export default function DynamicIslamicHeader({
           if (isMounted) setLocationName("Medan (GPS Default)");
         }
 
-        // Aladhan API
         const prayerRes = await fetch(
           `https://api.aladhan.com/v1/timings?latitude=${latitude}&longitude=${longitude}&method=2`,
         );
@@ -151,13 +295,11 @@ export default function DynamicIslamicHeader({
         },
         (error) => {
           console.error("GPS Error:", error.message || error);
-          // Fallback to Medan
           fetchPrayerData(3.5952, 98.6722, true);
         },
         { timeout: 10000, maximumAge: 60000 },
       );
     } else {
-      // Fallback if browser doesn't support GPS
       fetchPrayerData(3.5952, 98.6722, true);
     }
 
@@ -166,7 +308,6 @@ export default function DynamicIslamicHeader({
     };
   }, []);
 
-  // Calculate Next Prayer and Countdown
   useEffect(() => {
     if (prayerTimes.length === 0) return;
 
@@ -193,7 +334,6 @@ export default function DynamicIslamicHeader({
     }
 
     if (!upcoming) {
-      // Next prayer is Subuh tomorrow
       upcoming = prayerTimes[0];
       const [ph, pm] = upcoming.time.split(":").map(Number);
       const nextDaySeconds = 24 * 3600;
@@ -214,103 +354,6 @@ export default function DynamicIslamicHeader({
     );
   }, [currentTime, prayerTimes]);
 
-  // Cloud animation component
-  const CloudAnimation = () => (
-    <>
-      {[...Array(6)].map((_, i) => (
-        <motion.div
-          key={`cloud-${i}`}
-          initial={{
-            x: -200 - i * 150,
-            y: 20 + i * 25,
-            opacity: 0.4 + (i % 3) * 0.15,
-          }}
-          animate={{
-            x:
-              typeof window !== "undefined"
-                ? window.innerWidth + 200
-                : 1000,
-            y: [20 + i * 25, 20 + i * 25 + 10, 20 + i * 25],
-          }}
-          transition={{
-            x: {
-              duration: 30 + i * 8,
-              repeat: Infinity,
-              ease: "linear",
-              delay: i * 2,
-            },
-            y: {
-              duration: 6 + i * 1.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: i * 0.5,
-            },
-          }}
-          className="absolute pointer-events-none"
-        >
-          <Cloud
-            className={`${theme.textClass === "text-gray-900" ? "text-white/60" : "text-white/20"}`}
-            size={60 + i * 20}
-            fill="currentColor"
-          />
-        </motion.div>
-      ))}
-    </>
-  );
-
-  // Star animation component
-  const StarAnimation = () => (
-    <>
-      {[...Array(30)].map((_, i) => {
-        const randomX =
-          typeof window !== "undefined"
-            ? Math.random() * window.innerWidth
-            : Math.random() * 1000;
-        const randomY = Math.random() * 250;
-        const randomSize = 4 + Math.random() * 8;
-        const randomDelay = Math.random() * 3;
-        const randomDuration = 3 + Math.random() * 4;
-
-        return (
-          <motion.div
-            key={`star-${i}`}
-            initial={{
-              x: randomX,
-              y: randomY,
-              scale: 0.3,
-              opacity: 0,
-            }}
-            animate={{
-              opacity: [0, 0.4, 0.8, 1, 0.8, 0.4, 0],
-              scale: [0.3, 0.5, 0.8, 1, 0.8, 0.5, 0.3],
-            }}
-            transition={{
-              opacity: {
-                duration: randomDuration,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: randomDelay,
-              },
-              scale: {
-                duration: randomDuration,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: randomDelay,
-              },
-            }}
-            className="absolute"
-          >
-            <Star
-              className="text-yellow-100"
-              size={randomSize}
-              fill="currentColor"
-            />
-          </motion.div>
-        );
-      })}
-    </>
-  );
-
   const userName =
     session?.user?.user_metadata?.name || "Hamba Allah";
   const avatarUrl = session?.user?.user_metadata?.avatar_url;
@@ -325,16 +368,15 @@ export default function DynamicIslamicHeader({
         borderBottomRightRadius: "2.5rem",
       }}
     >
-      {/* Background Animations */}
       <div className="absolute inset-0 overflow-hidden z-[1]">
+        {/* INI KUNCI-NYA! KITA PANGGIL KOMPONEN YANG UDAH DI LUAR */}
         {theme.animation === "clouds" ? (
-          <CloudAnimation />
+          <CloudAnimation isSunset={isSunset} />
         ) : (
           <StarAnimation />
         )}
       </div>
 
-      {/* Islamic Pattern */}
       <div className="absolute inset-0 z-[2] mix-blend-overlay">
         <IslamicPattern
           className={`opacity-10 ${theme.textClass}`}
@@ -342,7 +384,6 @@ export default function DynamicIslamicHeader({
       </div>
 
       <div className="relative z-10 p-6 pt-10 pb-8 space-y-6">
-        {/* Top Row: Greeting & Avatar */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div
@@ -372,7 +413,6 @@ export default function DynamicIslamicHeader({
             </div>
           </div>
 
-          {/* Notification Bell */}
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={onToggleNotifications}
@@ -387,13 +427,11 @@ export default function DynamicIslamicHeader({
           </motion.button>
         </div>
 
-        {/* Middle Row: Next Prayer (Glassmorphism) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className={`${theme.glassBg} backdrop-blur-xl rounded-[2rem] p-8 text-center border ${theme.glassBorder} shadow-2xl relative overflow-hidden`}
         >
-          {/* Decorative Mosque in background of card */}
           <div className="absolute -bottom-6 -right-6 opacity-10 pointer-events-none">
             <MosqueIcon
               className={`w-40 h-40 ${theme.textClass}`}
@@ -417,7 +455,6 @@ export default function DynamicIslamicHeader({
           </div>
         </motion.div>
 
-        {/* All 5 Prayers Scrollable Row (NOW POSITIONED CORRECTLY) */}
         {prayerTimes.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
@@ -452,7 +489,6 @@ export default function DynamicIslamicHeader({
           </motion.div>
         )}
 
-        {/* Bottom Row: Location Pill */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
