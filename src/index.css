@@ -1283,8 +1283,8 @@
     min-width: calc(var(--spacing) * 0);
   }
 
-  .min-w-\[80px\] {
-    min-width: 80px;
+  .min-w-\[76px\] {
+    min-width: 76px;
   }
 
   .min-w-\[100px\] {
@@ -4356,6 +4356,12 @@
 
   .disabled\:opacity-50:disabled {
     opacity: .5;
+  }
+
+  @media (width >= 40rem) {
+    .sm\:gap-3 {
+      gap: calc(var(--spacing) * 3);
+    }
   }
 
   @media (width >= 48rem) {
