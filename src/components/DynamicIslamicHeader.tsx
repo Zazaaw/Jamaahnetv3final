@@ -305,6 +305,33 @@ export default function DynamicIslamicHeader({
           </div>
         </motion.div>
 
+        {/* All 5 Prayers Scrollable Row */}
+        {prayerTimes.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="flex gap-3 overflow-x-auto scrollbar-hide pb-2"
+          >
+            {prayerTimes.map((prayer) => {
+              const isNext = nextPrayer.name === prayer.name;
+              return (
+                <div 
+                  key={prayer.name}
+                  className={`flex-shrink-0 min-w-[80px] p-3 rounded-2xl backdrop-blur-md border transition-all ${
+                    isNext 
+                      ? `${theme.textClass === 'text-gray-900' ? 'bg-white/40 border-white/60' : 'bg-white/30 border-white/50'} scale-105 shadow-md` 
+                      : `${theme.textClass === 'text-gray-900' ? 'bg-white/20 border-white/20' : 'bg-white/10 border-white/10'}`
+                  }`}
+                >
+                  <p className={`text-xs font-medium mb-1 text-center ${theme.textClass} opacity-80`}>{prayer.name}</p>
+                  <p className={`text-sm font-bold text-center ${theme.textClass}`}>{prayer.time}</p>
+                </div>
+              );
+            })}
+          </motion.div>
+        )}
+
         {/* Bottom Row: Location Pill */}
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
