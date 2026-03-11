@@ -217,6 +217,7 @@ export default function HomeScreen({
         notifications={notifications}
         showNotifications={showNotifications}
         onToggleNotifications={() => setShowNotifications(!showNotifications)}
+        session={session}
       />
 
       {/* Notifications Dropdown */}
