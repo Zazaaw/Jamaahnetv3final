@@ -159,6 +159,7 @@ export default function PendingApprovalScreen({
                     <div className="text-sm">
                       <span className="font-semibold text-blue-900 dark:text-blue-100 block mb-1">Email</span>
                       <span className="text-blue-800 dark:text-blue-200">Email resmi dengan detail akun dan instruksi login</span>
+                      <p className="text-xs text-blue-700/70 dark:text-blue-300/70 mt-1 italic">Cek folder Spam/Junk jika email tidak masuk ke Inbox.</p>
                     </div>
                   </div>
                 </div>
@@ -218,11 +219,11 @@ export default function PendingApprovalScreen({
                   onClick={onNavigateToLogin}
                   className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 group"
                 >
-                  <span>Sudah Disetujui</span>
+                  <span>Klik disini untuk login</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </motion.button>
                 <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-3">
-                  Setelah menerima notifikasi, klik tombol di atas untuk login
+                  Jika akun Anda sudah disetujui admin, klik tombol di atas untuk login.
                 </p>
               </motion.div>
 

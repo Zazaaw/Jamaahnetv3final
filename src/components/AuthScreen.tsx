@@ -411,7 +411,7 @@ export default function AuthScreen({
                 type="button"
                 onClick={handleGoogleLogin}
                 whileTap={{ scale: 0.98 }}
-                className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-3.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                className="w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 py-3.5 rounded-xl hover:bg-white dark:hover:bg-gray-700 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-3 font-semibold"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path
@@ -431,7 +431,7 @@ export default function AuthScreen({
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                <span className="font-semibold">Lanjutkan dengan Google</span>
+                <span>Lanjutkan dengan Google</span>
               </motion.button>
             </form>
 
@@ -440,16 +440,16 @@ export default function AuthScreen({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="mt-6 text-center text-sm"
+              className="mt-8 text-center text-sm"
             >
               {isSignup ? (
                 <>
                   <span className="text-gray-600 dark:text-gray-400">Sudah punya akun?</span>{' '}
                   <button
                     onClick={() => setIsSignup(false)}
-                    className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold"
+                    className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline font-semibold transition-colors"
                   >
-                    Masuk di sini
+                    Klik disini untuk login
                   </button>
                 </>
               ) : (
@@ -457,9 +457,9 @@ export default function AuthScreen({
                   <span className="text-gray-600 dark:text-gray-400">Belum punya akun?</span>{' '}
                   <button
                     onClick={() => setIsSignup(true)}
-                    className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold"
+                    className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline font-semibold transition-colors"
                   >
-                    Daftar di sini
+                    Klik disini untuk daftar
                   </button>
                 </>
               )}
