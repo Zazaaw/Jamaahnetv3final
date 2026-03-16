@@ -1157,6 +1157,10 @@
     height: 2px;
   }
 
+  .h-\[550px\] {
+    height: 550px;
+  }
+
   .h-full {
     height: 100%;
   }
@@ -1295,6 +1299,10 @@
 
   .max-w-\[75\%\] {
     max-width: 75%;
+  }
+
+  .max-w-\[200px\] {
+    max-width: 200px;
   }
 
   .max-w-\[calc\(100vw-3rem\)\] {
@@ -1855,6 +1863,10 @@
     }
   }
 
+  .bg-black {
+    background-color: var(--color-black);
+  }
+
   .bg-black\/20 {
     background-color: #0003;
   }
@@ -1862,6 +1874,16 @@
   @supports (color: color-mix(in lab, red, red)) {
     .bg-black\/20 {
       background-color: color-mix(in oklab, var(--color-black) 20%, transparent);
+    }
+  }
+
+  .bg-black\/40 {
+    background-color: #0006;
+  }
+
+  @supports (color: color-mix(in lab, red, red)) {
+    .bg-black\/40 {
+      background-color: color-mix(in oklab, var(--color-black) 40%, transparent);
     }
   }
 
@@ -3655,6 +3677,10 @@
 
   .placeholder-gray-500::placeholder {
     color: var(--color-gray-500);
+  }
+
+  .accent-emerald-600 {
+    accent-color: var(--color-emerald-600);
   }
 
   .opacity-0 {
