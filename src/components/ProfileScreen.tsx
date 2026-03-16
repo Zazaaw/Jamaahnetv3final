@@ -1001,73 +1001,78 @@ function TwitterStylePost({
           )}
 
           {/* Actions - Twitter Style */}
-          <div className="flex items-center justify-between max-w-md mt-2">
-            {/* Comment */}
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onNavigate?.('timeline-detail', post);
-              }}
-              className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors group/btn"
-            >
-              <div className="p-2 rounded-full group-hover/btn:bg-blue-50 dark:group-hover/btn:bg-blue-900/20 transition-colors">
-                <MessageCircle className="w-5 h-5" />
-              </div>
-              <span className="text-sm">{comments.length || 0}</span>
-            </motion.button>
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+            {/* Left Side: Just icons for clicking */}
+            <div className="flex items-center gap-1">
+              {/* Comment */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate?.('timeline-detail', post);
+                }}
+                className="flex items-center text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors group/btn"
+              >
+                <div className="p-2 rounded-full group-hover/btn:bg-blue-50 dark:group-hover/btn:bg-blue-900/20 transition-colors">
+                  <MessageCircle className="w-5 h-5" />
+                </div>
+              </motion.button>
 
-            {/* Retweet (disabled) */}
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              className="hidden flex items-center gap-2 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-            >
-              <div className="p-2 rounded-full transition-colors">
-                <Repeat2 className="w-5 h-5" />
-              </div>
-              <span className="text-sm">0</span>
-            </motion.button>
+              {/* Retweet (disabled) */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                className="hidden flex items-center text-gray-400 dark:text-gray-500 cursor-not-allowed"
+              >
+                <div className="p-2 rounded-full transition-colors">
+                  <Repeat2 className="w-5 h-5" />
+                </div>
+              </motion.button>
 
-            {/* Like */}
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={handleLike}
-              className={`flex items-center gap-2 transition-colors group/btn ${
-                isLiked
-                  ? 'text-pink-500 dark:text-pink-400'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-pink-500 dark:hover:text-pink-400'
-              }`}
-            >
-              <div className="p-2 rounded-full group-hover/btn:bg-pink-50 dark:group-hover/btn:bg-pink-900/20 transition-colors">
-                <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-              </div>
-              <span className="text-sm">{likes.length}</span>
-            </motion.button>
+              {/* Like */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={handleLike}
+                className={`flex items-center transition-colors group/btn ${
+                  isLiked
+                    ? 'text-pink-500 dark:text-pink-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-pink-500 dark:hover:text-pink-400'
+                }`}
+              >
+                <div className="p-2 rounded-full group-hover/btn:bg-pink-50 dark:group-hover/btn:bg-pink-900/20 transition-colors">
+                  <Heart className={`w-[22px] h-[22px] ${isLiked ? 'fill-current' : ''}`} />
+                </div>
+              </motion.button>
 
-            {/* Bookmark */}
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={handleBookmark}
-              className={`hidden flex items-center gap-2 transition-colors group/btn ${
-                isBookmarked
-                  ? 'text-emerald-500 dark:text-emerald-400'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400'
-              }`}
-            >
-              <div className="p-2 rounded-full group-hover/btn:bg-emerald-50 dark:group-hover/btn:bg-emerald-900/20 transition-colors">
-                <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
-              </div>
-            </motion.button>
+              {/* Bookmark */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={handleBookmark}
+                className={`hidden flex items-center transition-colors group/btn ${
+                  isBookmarked
+                    ? 'text-emerald-500 dark:text-emerald-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400'
+                }`}
+              >
+                <div className="p-2 rounded-full group-hover/btn:bg-emerald-50 dark:group-hover/btn:bg-emerald-900/20 transition-colors">
+                  <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
+                </div>
+              </motion.button>
 
-            {/* Share (disabled) */}
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              className="hidden flex items-center gap-2 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-            >
-              <div className="p-2 rounded-full transition-colors">
-                <Share2 className="w-5 h-5" />
-              </div>
-            </motion.button>
+              {/* Share (disabled) */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                className="hidden flex items-center text-gray-400 dark:text-gray-500 cursor-not-allowed"
+              >
+                <div className="p-2 rounded-full transition-colors">
+                  <Share2 className="w-5 h-5" />
+                </div>
+              </motion.button>
+            </div>
+
+            {/* Right Side: Interaction status text (Point 19) */}
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="font-semibold text-gray-700 dark:text-gray-200">{likes.length} Likes</span> · <span className="font-semibold text-gray-700 dark:text-gray-200">{comments.length} Comments</span>
+            </div>
           </div>
         </div>
 

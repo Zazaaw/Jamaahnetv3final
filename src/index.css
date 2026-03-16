@@ -1161,6 +1161,10 @@
     height: 2px;
   }
 
+  .h-\[22px\] {
+    height: 22px;
+  }
+
   .h-\[550px\] {
     height: 550px;
   }
@@ -1283,6 +1287,10 @@
 
   .w-\[2px\] {
     width: 2px;
+  }
+
+  .w-\[22px\] {
+    width: 22px;
   }
 
   .w-fit {
@@ -3153,6 +3161,10 @@
 
   .pt-2 {
     padding-top: calc(var(--spacing) * 2);
+  }
+
+  .pt-3 {
+    padding-top: calc(var(--spacing) * 3);
   }
 
   .pt-4 {
