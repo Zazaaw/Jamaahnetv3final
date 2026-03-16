@@ -62,6 +62,7 @@ export default function ProfileScreen({
 
   const fetchProfile = async () => {
     try {
+      console.log('Profile refreshed');
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -206,7 +207,7 @@ export default function ProfileScreen({
               {profile?.name || 'User'}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
-              @{profile?.email?.split('@')[0] || session.user.email?.split('@')[0]}
+              @{profile?.username || profile?.email?.split('@')[0] || session.user.email?.split('@')[0]}
             </p>
           </div>
 
@@ -305,7 +306,7 @@ export default function ProfileScreen({
           )}
 
           {/* Member Card Badge */}
-          {profile?.member_id && (
+          {profile?.member_id && (session.user.id === profile.id || profile?.role === 'Admin') && (
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowMemberCardModal(true)}
@@ -652,19 +653,6 @@ export default function ProfileScreen({
                   </button>
                 </motion.div>
 
-                {/* Prayer Times */}
-                <SettingsMenuItem
-                  icon={Clock}
-                  title="Waktu Sholat"
-                  subtitle="Atur jadwal sholat"
-                  gradient="from-emerald-500 to-teal-500"
-                  onClick={() => {
-                    setShowSettingsMenu(false);
-                    setShowPrayerTimesSettingsModal(true);
-                  }}
-                  delay={0.15}
-                />
-
                 {/* Connections */}
                 <SettingsMenuItem
                   icon={Users}
@@ -712,7 +700,7 @@ export default function ProfileScreen({
                     setShowSettingsMenu(false);
                     setShowChangePasswordModal(true);
                   }}
-                  delay={0.35}
+                  delay={0.3}
                 />
 
                 {/* Contact Us */}
@@ -725,7 +713,7 @@ export default function ProfileScreen({
                     setShowSettingsMenu(false);
                     onNavigate('contact');
                   }}
-                  delay={0.4}
+                  delay={0.35}
                 />
 
                 {/* About Jamaah.net */}
@@ -738,7 +726,7 @@ export default function ProfileScreen({
                     setShowSettingsMenu(false);
                     onNavigate('about');
                   }}
-                  delay={0.45}
+                  delay={0.4}
                 />
 
                 {/* Admin Dashboard - Only visible for Admin role */}
@@ -752,7 +740,7 @@ export default function ProfileScreen({
                       setShowSettingsMenu(false);
                       onNavigate('admin-dashboard');
                     }}
-                    delay={0.5}
+                    delay={0.45}
                     isHighlighted={true}
                   />
                 )}
@@ -761,7 +749,7 @@ export default function ProfileScreen({
                 <motion.button
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: profile?.role === 'Admin' ? 0.55 : 0.5 }}
+                  transition={{ delay: profile?.role === 'Admin' ? 0.5 : 0.45 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={onLogout}
                   className="w-full bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 flex items-center gap-3 border-2 border-red-200 dark:border-red-800"
