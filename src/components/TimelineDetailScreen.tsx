@@ -22,6 +22,10 @@ interface TimelinePost {
   created_at: number;
   likes?: string[];
   comments?: Comment[];
+  profiles?: {
+    name?: string;
+    avatar_url?: string;
+  };
 }
 
 export default function TimelineDetailScreen({
@@ -30,12 +34,14 @@ export default function TimelineDetailScreen({
   onBack,
   onEdit,
   onDelete,
+  onNavigate,
 }: {
   post: TimelinePost;
   session: any;
   onBack: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onNavigate?: (screen: string, params?: any) => void;
 }) {
   const [likes, setLikes] = useState<string[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -45,7 +51,41 @@ export default function TimelineDetailScreen({
 
   useEffect(() => {
     loadPostData();
-  }, [post.id]);
+
+    // Setup Real-time updates for likes and comments
+    const channel = supabase
+      .channel(`timeline_post_${post.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'timeline_posts',
+          filter: `id=eq.${post.id}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            const newComments = payload.new.comments || [];
+            setComments(newComments.sort((a: Comment, b: Comment) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            ));
+            
+            const newLikes = payload.new.likes || [];
+            setLikes(newLikes);
+            
+            // Check if current user still likes it
+            if (session) {
+              setIsLiked(newLikes.includes(session.user.id));
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [post.id, session]);
 
   const loadPostData = () => {
     // Load from post object (already has likes and comments from API)
@@ -80,7 +120,7 @@ export default function TimelineDetailScreen({
 
     try {
       const { error } = await supabase
-        .from('announcements')
+        .from('timeline_posts')
         .update({ likes: updatedLikes })
         .eq('id', post.id);
 
@@ -122,7 +162,7 @@ export default function TimelineDetailScreen({
 
     try {
       const { error } = await supabase
-        .from('announcements')
+        .from('timeline_posts')
         .update({ comments: updatedComments })
         .eq('id', post.id);
 
@@ -147,7 +187,7 @@ export default function TimelineDetailScreen({
 
     try {
       const { error } = await supabase
-        .from('announcements')
+        .from('timeline_posts')
         .update({ comments: updatedComments })
         .eq('id', post.id);
 
@@ -214,14 +254,27 @@ export default function TimelineDetailScreen({
           className="bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700/50"
         >
           {/* Author Info */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-lg">
-                {post.user_name?.charAt(0)?.toUpperCase() || 'A'}
-              </span>
-            </div>
+          <div 
+            className="flex items-center gap-3 mb-4 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => onNavigate?.('other-profile', { userId: post.user_id })}
+          >
+            {post.profiles?.avatar_url ? (
+              <img 
+                src={post.profiles.avatar_url} 
+                alt={post.profiles?.name || post.user_name} 
+                className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-lg">
+                  {(post.profiles?.name || post.user_name)?.charAt(0)?.toUpperCase() || 'A'}
+                </span>
+              </div>
+            )}
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">{post.user_name}</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                {post.profiles?.name || post.user_name}
+              </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {new Date(post.created_at).toLocaleDateString('id-ID', {
                   day: 'numeric',

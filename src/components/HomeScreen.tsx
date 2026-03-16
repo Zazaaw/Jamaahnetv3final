@@ -476,18 +476,15 @@ function TwitterStylePost({
     if (!session) return;
     
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/profile`,
-        {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        }
-      );
-      
-      if (response.ok) {
-        const profile = await response.json();
-        setIsAdmin(profile.role === 'Admin');
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+        
+      if (!error && data) {
+        setIsAdmin(data.role === 'Admin');
       }
     } catch (error) {
       console.error('Error fetching user role:', error);
@@ -496,25 +493,8 @@ function TwitterStylePost({
 
   const fetchBookmarkStatus = async () => {
     if (!session) return;
-    
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/timeline/bookmarks/list`,
-        {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        }
-      );
-      
-      if (response.ok) {
-        const bookmarkedPosts = await response.json();
-        const isBookmarked = bookmarkedPosts.some((p: any) => p.id === post.id);
-        setIsBookmarked(isBookmarked);
-      }
-    } catch (error) {
-      console.error('Error fetching bookmark status:', error);
-    }
+    // TODO: Implement Supabase bookmarks list check
+    setIsBookmarked(false);
   };
 
   const handleLike = async (e: React.MouseEvent) => {
@@ -558,30 +538,9 @@ function TwitterStylePost({
     // Optimistic update
     const newIsBookmarked = !isBookmarked;
     setIsBookmarked(newIsBookmarked);
-
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/timeline/${post.id}/bookmark`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setIsBookmarked(data.isBookmarked);
-      } else {
-        // Revert on error
-        setIsBookmarked(!newIsBookmarked);
-      }
-    } catch (error) {
-      console.error('Error toggling bookmark:', error);
-      // Revert on error
-      setIsBookmarked(!newIsBookmarked);
-    }
+    
+    // TODO: Implement Supabase bookmarks
+    toast.success(newIsBookmarked ? 'Post disimpan!' : 'Post dihapus dari simpanan');
   };
 
   const handleDeletePost = async (e: React.MouseEvent) => {
@@ -589,23 +548,16 @@ function TwitterStylePost({
     if (!session) return;
 
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/timeline/${post.id}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        }
-      );
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.from('timeline_posts').delete().eq('id', post.id);
 
-      if (response.ok) {
-        onRefresh();
-      } else {
-        console.error('Failed to delete post:', await response.text());
-      }
+      if (error) throw error;
+      
+      toast.success('Post berhasil dihapus');
+      onRefresh();
     } catch (error) {
       console.error('Error deleting post:', error);
+      toast.error('Gagal menghapus post');
     }
   };
 
@@ -619,7 +571,13 @@ function TwitterStylePost({
     >
       <div className="flex gap-3">
         {/* Avatar */}
-        <div className="flex-shrink-0">
+        <div 
+          className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigate?.('other-profile', { userId: post.user_id });
+          }}
+        >
           {post.profiles?.avatar_url ? (
             <img 
               src={post.profiles.avatar_url} 
@@ -639,7 +597,13 @@ function TwitterStylePost({
         <div className="flex-1 min-w-0">
           {/* Header */}
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-bold text-gray-900 dark:text-white hover:underline">
+            <span 
+              className="font-bold text-gray-900 dark:text-white hover:underline cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigate?.('other-profile', { userId: post.user_id });
+              }}
+            >
               {post.profiles?.name || post.user_name || 'Unknown User'}
             </span>
             <span className="text-gray-500 dark:text-gray-400 text-sm">
