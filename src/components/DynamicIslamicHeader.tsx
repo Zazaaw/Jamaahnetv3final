@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Bell, Cloud, Star, MapPin, User } from "lucide-react";
 import { IslamicPattern, MosqueIcon } from "./IslamicPattern";
+import { getSupabaseClient } from "../utils/supabase/client";
 
 interface DynamicIslamicHeaderProps {
   notifications: any[];
@@ -170,7 +171,18 @@ export default function DynamicIslamicHeader({
   onToggleNotifications,
   session,
 }: DynamicIslamicHeaderProps) {
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      if (!session?.user?.id) return;
+      const supabase = getSupabaseClient();
+      const { data } = await supabase.from('profiles').select('avatar_url, name').eq('id', session.user.id).single();
+      if (data?.avatar_url) setProfileAvatar(data.avatar_url);
+    };
+    fetchAvatar();
+  }, [session]);
 
   const [locationName, setLocationName] = useState(
     "Mendeteksi lokasi...",
@@ -357,6 +369,7 @@ export default function DynamicIslamicHeader({
   const userName =
     session?.user?.user_metadata?.name || "Hamba Allah";
   const avatarUrl = session?.user?.user_metadata?.avatar_url;
+  const finalAvatar = profileAvatar || avatarUrl;
 
   return (
     <motion.div
@@ -389,9 +402,9 @@ export default function DynamicIslamicHeader({
             <div
               className={`w-12 h-12 rounded-full overflow-hidden border-2 ${theme.glassBorder} shadow-lg ${theme.glassBg} backdrop-blur-md`}
             >
-              {avatarUrl ? (
+              {finalAvatar ? (
                 <img
-                  src={avatarUrl}
+                  src={finalAvatar}
                   alt={userName}
                   className="w-full h-full object-cover"
                 />
