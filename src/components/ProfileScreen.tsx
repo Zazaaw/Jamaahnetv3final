@@ -1020,7 +1020,7 @@ function TwitterStylePost({
             {/* Retweet (disabled) */}
             <motion.button
               whileTap={{ scale: 0.9 }}
-              className="flex items-center gap-2 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+              className="hidden flex items-center gap-2 text-gray-400 dark:text-gray-500 cursor-not-allowed"
             >
               <div className="p-2 rounded-full transition-colors">
                 <Repeat2 className="w-5 h-5" />
@@ -1048,7 +1048,7 @@ function TwitterStylePost({
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={handleBookmark}
-              className={`flex items-center gap-2 transition-colors group/btn ${
+              className={`hidden flex items-center gap-2 transition-colors group/btn ${
                 isBookmarked
                   ? 'text-emerald-500 dark:text-emerald-400'
                   : 'text-gray-500 dark:text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400'
@@ -1062,7 +1062,7 @@ function TwitterStylePost({
             {/* Share (disabled) */}
             <motion.button
               whileTap={{ scale: 0.9 }}
-              className="flex items-center gap-2 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+              className="hidden flex items-center gap-2 text-gray-400 dark:text-gray-500 cursor-not-allowed"
             >
               <div className="p-2 rounded-full transition-colors">
                 <Share2 className="w-5 h-5" />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, MessageSquare, Grid, Heart, MessageCircle, Award, CreditCard, Users, ShoppingBag, Repeat2, Bookmark, Share2, MoreVertical, Trash2 } from 'lucide-react';
+import { User, MessageSquare, Grid, Heart, MessageCircle, Award, CreditCard, Users, ShoppingBag, Repeat2, Bookmark, Share2, MoreVertical, Trash2, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { projectId } from '../utils/supabase/info';
@@ -22,12 +22,14 @@ export default function PublicProfileScreen({
   session, 
   user,
   onNavigate,
-  onStartChat
+  onStartChat,
+  onBack
 }: { 
   session: any;
   user: any;
   onNavigate: (screen: string, data?: any) => void;
   onStartChat: (userId: string) => void;
+  onBack?: () => void;
 }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [showMemberCardModal, setShowMemberCardModal] = useState(false);
@@ -138,11 +140,12 @@ export default function PublicProfileScreen({
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4"
+        className="relative z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center gap-3"
       >
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold dark:text-white">Profil</h1>
-        </div>
+        <button onClick={onBack} className="p-1 -ml-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors">
+          <ArrowLeft className="w-6 h-6" />
+        </button>
+        <h1 className="text-xl font-bold dark:text-white">Profil</h1>
       </motion.div>
 
       {/* Profile Section - Threads Style */}
@@ -160,7 +163,7 @@ export default function PublicProfileScreen({
               {profile?.name || 'User'}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
-              @{profile?.email?.split('@')[0] || user.email?.split('@')[0]}
+              @{(profile as any)?.username || profile?.email?.split('@')[0] || user?.email?.split('@')[0] || 'jamaah'}
             </p>
           </div>
 
@@ -220,18 +223,6 @@ export default function PublicProfileScreen({
               <Award className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               <span className="dark:text-white">{profile.role}</span>
             </div>
-          )}
-
-          {/* Member Card Badge */}
-          {profile?.member_id && (
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowMemberCardModal(true)}
-              className="flex-shrink-0 border border-gray-300 dark:border-gray-700 rounded-full px-4 py-1.5 text-sm font-medium flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-            >
-              <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="dark:text-white">Kartu Member</span>
-            </motion.button>
           )}
 
           {/* Stats Badges */}
@@ -705,7 +696,7 @@ function TwitterStylePost({
             {/* Retweet (disabled) */}
             <motion.button
               whileTap={{ scale: 0.9 }}
-              className="flex items-center gap-2 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+              className="hidden flex items-center gap-2 text-gray-400 dark:text-gray-500 cursor-not-allowed"
             >
               <div className="p-2 rounded-full transition-colors">
                 <Repeat2 className="w-5 h-5" />
@@ -733,7 +724,7 @@ function TwitterStylePost({
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={handleBookmark}
-              className={`flex items-center gap-2 transition-colors group/btn ${
+              className={`hidden flex items-center gap-2 transition-colors group/btn ${
                 isBookmarked
                   ? 'text-emerald-500 dark:text-emerald-400'
                   : 'text-gray-500 dark:text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400'
@@ -747,7 +738,7 @@ function TwitterStylePost({
             {/* Share (disabled) */}
             <motion.button
               whileTap={{ scale: 0.9 }}
-              className="flex items-center gap-2 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+              className="hidden flex items-center gap-2 text-gray-400 dark:text-gray-500 cursor-not-allowed"
             >
               <div className="p-2 rounded-full transition-colors">
                 <Share2 className="w-5 h-5" />
@@ -935,7 +926,7 @@ function MemberCard3DModal({
                 <div>
                   <p className="text-white/60 text-[10px] tracking-widest font-medium uppercase mb-1.5">MEMBER NAME</p>
                   <p className="text-white text-lg font-bold tracking-wide mb-2">
-                    {profile?.name || user.email}
+                    {profile?.name || profile?.email || 'Jamaah Member'}
                   </p>
                   {/* Badges */}
                   <div className="flex items-center gap-1.5">
@@ -955,8 +946,8 @@ function MemberCard3DModal({
                 <div className="text-right">
                   <p className="text-white/60 text-[10px] tracking-widest font-medium uppercase mb-1.5">JOINED</p>
                   <p className="text-white text-sm font-semibold">
-                    {user.user_metadata?.joinedAt 
-                      ? new Date(user.user_metadata.joinedAt).toLocaleDateString('id-ID', { 
+                    {(profile as any)?.created_at || user?.created_at 
+                      ? new Date((profile as any)?.created_at || user?.created_at).toLocaleDateString('id-ID', { 
                           year: 'numeric', 
                           month: 'short' 
                         })

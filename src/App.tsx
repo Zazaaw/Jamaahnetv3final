@@ -98,7 +98,7 @@ function AppContent() {
     });
   };
 
-  const handleNavigation = (screen: Screen, data?: any) => {
+  const handleNavigation = (screen: Screen | 'other-profile', data?: any) => {
     setPreviousScreen(currentScreen);
     if (screen === 'product-detail') {
       setSelectedProduct(data);
@@ -108,10 +108,12 @@ function AppContent() {
       setSelectedArticle(data);
     } else if (screen === 'timeline-detail') {
       setSelectedTimeline(data);
-    } else if (screen === 'public-profile') {
-      setSelectedUser(data);
+    } else if (screen === 'public-profile' || screen === 'other-profile') {
+      setSelectedUser(data?.userId ? { id: data.userId } : data);
+      setCurrentScreen('public-profile');
+      return;
     }
-    setCurrentScreen(screen);
+    setCurrentScreen(screen as Screen);
   };
 
   const handleLogout = async () => {
@@ -401,6 +403,7 @@ function AppContent() {
           user={selectedUser} 
           onNavigate={handleNavigation}
           onStartChat={handleStartChat}
+          onBack={() => setCurrentScreen(previousScreen)}
         />
         <Toaster position="top-center" richColors />
       </>
