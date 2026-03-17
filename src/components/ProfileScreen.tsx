@@ -8,6 +8,8 @@ import PrayerTimesSettingsModal from './PrayerTimesSettingsModal';
 import ChangePasswordModal from './ChangePasswordModal';
 import { IslamicPattern, MosqueIcon } from './IslamicPattern';
 import { useLanguage } from '../utils/LanguageContext';
+import { toPng } from 'html-to-image';
+import { toast } from 'sonner@2.0.3';
 
 interface Profile {
   id: string;
@@ -146,6 +148,28 @@ export default function ProfileScreen({
       }
     } catch (error) {
       console.error('Error fetching user products:', error);
+    }
+  };
+
+  const handleShareProfile = async () => {
+    const profileUrl = `${window.location.origin}/profile/${profile?.username || profile?.id}`;
+    const text = `Mari terhubung di Jamaah.net! Gunakan ID Member saya: ${profile?.member_id}`;
+
+    try {
+      // Check if running in a secure context and share is supported
+      if (navigator.share && window.isSecureContext) {
+        await navigator.share({
+          title: `Profil Jamaah.net - ${profile?.name}`,
+          text: text,
+          url: profileUrl,
+        });
+      } else {
+        throw new Error('Share not allowed or supported in this context');
+      }
+    } catch (error) {
+      // Fallback: Copy to clipboard
+      await navigator.clipboard.writeText(`${text}\n${profileUrl}`);
+      toast.success('Link profil disalin ke clipboard!');
     }
   };
 
@@ -369,6 +393,7 @@ export default function ProfileScreen({
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.98 }}
+            onClick={handleShareProfile}
             className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             Bagikan Profil
@@ -1160,6 +1185,30 @@ function MemberCard3DModal({
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
 
+  const handleDownloadCard = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const cardElement = document.getElementById('member-card-capture');
+    if (!cardElement) return;
+
+    try {
+      // Reset rotation for capture
+      setRotateX(0); setRotateY(0);
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Use toPng which supports modern CSS (oklch)
+      const dataUrl = await toPng(cardElement, { cacheBust: true, pixelRatio: 3 });
+      
+      const link = document.createElement('a');
+      link.download = `Kartu-Member-${profile?.name?.replace(/\s+/g, '-') || 'Jamaah'}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success('Kartu Member berhasil diunduh!');
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast.error('Gagal mengunduh kartu');
+    }
+  };
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const card = e.currentTarget;
     const rect = card.getBoundingClientRect();
@@ -1208,6 +1257,7 @@ function MemberCard3DModal({
         >
           {/* 3D Card */}
           <motion.div
+            id="member-card-capture"
             animate={{
               rotateX: rotateX,
               rotateY: rotateY,
@@ -1328,14 +1378,24 @@ function MemberCard3DModal({
             </div>
           </motion.div>
 
-          {/* Close Button */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={onClose}
-            className="mt-6 mx-auto block bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-6 py-3 rounded-2xl font-semibold shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            Tutup
-          </motion.button>
+          {/* Actions */}
+          <div className="mt-8 flex justify-center gap-4">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleDownloadCard}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-colors flex items-center gap-2"
+            >
+              <Share className="w-5 h-5" />
+              Simpan Kartu
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={onClose}
+              className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-6 py-3 rounded-2xl font-semibold shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              Tutup
+            </motion.button>
+          </div>
         </motion.div>
       </motion.div>
     </>
