@@ -10,7 +10,10 @@ interface Connection {
   name: string;
   username: string;
   mosque?: string;
+  avatar_url?: string;
 }
+
+import { getSupabaseClient } from '../utils/supabase/client';
 
 export default function ConnectionsScreen({
   session,
@@ -31,16 +34,28 @@ export default function ConnectionsScreen({
 
   const fetchConnections = async () => {
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/connections`,
-        {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        }
-      );
-      const data = await response.json();
-      setConnections(data);
+      const supabase = getSupabaseClient();
+      // Get the IDs of users this user is connected to
+      const { data: connData, error: connError } = await supabase
+        .from('user_connections')
+        .select('connected_user_id')
+        .eq('user_id', session.user.id);
+
+      if (connError) throw connError;
+
+      if (connData && connData.length > 0) {
+        const connectedIds = connData.map(c => c.connected_user_id);
+        // Fetch the actual profiles for those IDs
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, name, username, mosque, avatar_url')
+          .in('id', connectedIds);
+          
+        if (profilesError) throw profilesError;
+        setConnections(profilesData || []);
+      } else {
+        setConnections([]);
+      }
     } catch (error) {
       console.error('Error fetching connections:', error);
     } finally {
@@ -132,11 +147,19 @@ export default function ConnectionsScreen({
                 className="bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl p-5 shadow-lg border border-gray-100 dark:border-gray-700/50"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-lg">
-                      {connection.name?.charAt(0).toUpperCase() || connection.username?.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                  {connection.avatar_url ? (
+                    <img
+                      src={connection.avatar_url}
+                      alt={connection.name}
+                      className="w-14 h-14 rounded-full object-cover flex-shrink-0 border-2 border-white dark:border-gray-800 shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <span className="text-white text-lg font-medium">
+                        {connection.name?.charAt(0).toUpperCase() || connection.username?.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 dark:text-white truncate">
                       {connection.name}

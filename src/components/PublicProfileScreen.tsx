@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { User, MessageSquare, Grid, Heart, MessageCircle, Award, CreditCard, Users, ShoppingBag, Repeat2, Bookmark, Share2, MoreVertical, Trash2, ArrowLeft } from 'lucide-react';
+import { User, MessageSquare, Grid, Heart, MessageCircle, Award, CreditCard, Users, ShoppingBag, Repeat2, Bookmark, Share2, MoreVertical, Trash2, ArrowLeft, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { projectId } from '../utils/supabase/info';
 import { IslamicPattern, MosqueIcon } from './IslamicPattern';
+import { toast } from 'sonner@2.0.3';
 
 interface Profile {
   id: string;
@@ -36,6 +37,7 @@ export default function PublicProfileScreen({
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [userProducts, setUserProducts] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'posts' | 'market' | 'media'>('posts');
+  const [isFollowing, setIsFollowing] = useState(false);
   
   const supabase = getSupabaseClient();
 
@@ -48,6 +50,49 @@ export default function PublicProfileScreen({
       }
     }
   }, [user, activeTab]);
+
+  useEffect(() => {
+    const checkConnection = async () => {
+      if (!session?.user?.id || !user?.id) return;
+      const { data, error } = await supabase
+        .from('user_connections')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .eq('connected_user_id', user.id)
+        .maybeSingle();
+      
+      if (data) setIsFollowing(true);
+    };
+    checkConnection();
+  }, [session, user]);
+
+  const handleFollow = async () => {
+    if (!session?.user?.id) {
+      toast.error('Silakan login untuk mengikuti');
+      return;
+    }
+    
+    try {
+      if (isFollowing) {
+        // Unfollow
+        await supabase.from('user_connections')
+          .delete()
+          .eq('user_id', session.user.id)
+          .eq('connected_user_id', user.id);
+        setIsFollowing(false);
+        toast.success('Batal mengikuti akun ini');
+      } else {
+        // Follow
+        await supabase.from('user_connections')
+          .insert({ user_id: session.user.id, connected_user_id: user.id });
+        setIsFollowing(true);
+        toast.success('Berhasil mengikuti akun ini!');
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+      toast.error('Gagal memperbarui status ikuti');
+    }
+  };
 
   const fetchProfile = async () => {
     try {
@@ -237,18 +282,33 @@ export default function PublicProfileScreen({
           </div>
         </motion.div>
 
-        {/* Action Button - Message */}
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => onStartChat(user.id)}
-          className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-2 rounded-xl font-semibold text-sm mb-6 shadow-lg flex items-center justify-center gap-2"
-        >
-          <MessageSquare className="w-4 h-4" />
-          Kirim Pesan
-        </motion.button>
+        {/* Action Button - Follow & Message */}
+        <div className="flex gap-3 mb-6">
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={handleFollow}
+            className={`flex-1 py-2 rounded-xl font-semibold text-sm shadow-lg flex items-center justify-center gap-2 transition-colors ${
+              isFollowing 
+                ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700' 
+                : 'bg-emerald-600 text-white'
+            }`}
+          >
+            <UserPlus className="w-4 h-4" />
+            {isFollowing ? 'Mengikuti' : 'Ikuti'}
+          </motion.button>
+          
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => onStartChat(user.id)}
+            className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-2 rounded-xl font-semibold text-sm shadow-lg flex items-center justify-center gap-2"
+          >
+            <MessageSquare className="w-4 h-4" />
+            Kirim Pesan
+          </motion.button>
+        </div>
 
         {/* Navigation Tabs - Minimalist Text-Based */}
         <motion.div
@@ -346,7 +406,7 @@ export default function PublicProfileScreen({
                   Belum ada produk yang dijual
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Pengguna ini belum menjual produk
+                  Belum ada produk dan layanan
                 </p>
               </motion.div>
             ) : (
