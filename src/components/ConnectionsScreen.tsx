@@ -74,52 +74,40 @@ export default function ConnectionsScreen({
         <IslamicPattern className="text-purple-600 dark:text-purple-400 opacity-[0.02]" />
       </div>
 
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative bg-gradient-to-br from-purple-600 via-pink-600 to-purple-700 dark:from-purple-700 dark:via-pink-700 dark:to-purple-800 text-white p-6 pb-20"
-        style={{ borderBottomLeftRadius: '2rem', borderBottomRightRadius: '2rem' }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
-        <IslamicPattern className="text-white opacity-10" />
-        
-        <div className="relative z-10">
-          <button onClick={onBack} className="mb-4 p-2 hover:bg-white/20 rounded-xl transition-colors">
-            <ArrowLeft className="w-6 h-6" />
+      {/* Header Pattern Only */}
+      <div className="fixed top-0 left-0 right-0 h-32 bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10 pointer-events-none" />
+
+      {/* Clean Sticky Header */}
+      <div className="sticky top-0 z-30 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl pt-12 pb-4 px-6 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-between mb-4">
+          <button 
+            onClick={onBack} 
+            className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors text-gray-700 dark:text-gray-300"
+          >
+            <ArrowLeft className="w-5 h-5" />
           </button>
           
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
-              <Users className="w-8 h-8" />
-            </div>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold mb-1">Koneksi</h1>
-              <p className="text-white/80 text-sm">
-                Kelola jamaah yang Anda ikuti dan pengikut Anda
-              </p>
-            </div>
-          </div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+            Koneksi
+          </h1>
 
-          <button
+          <motion.button
+            whileTap={{ scale: 0.9 }}
             onClick={() => setShowAddModal(true)}
-            className="w-full bg-white/20 backdrop-blur-md hover:bg-white/30 text-white py-3 px-6 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all"
+            className="p-2.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
           >
             <UserPlus className="w-5 h-5" />
-            Tambah Koneksi
-          </button>
+          </motion.button>
         </div>
-      </motion.div>
 
-      {/* Tab Bar */}
-      <div className="relative z-20 px-6 -mt-8">
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-1.5 rounded-2xl shadow-lg border border-white/20 flex gap-2">
+        {/* Tab Bar within Sticky Header */}
+        <div className="bg-gray-100/80 dark:bg-gray-800/80 p-1.5 rounded-2xl flex gap-2">
           <button
             onClick={() => setActiveTab('mengikuti')}
             className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all ${
               activeTab === 'mengikuti'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'
             }`}
           >
             Mengikuti ({following.length})
@@ -128,8 +116,8 @@ export default function ConnectionsScreen({
             onClick={() => setActiveTab('pengikut')}
             className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all ${
               activeTab === 'pengikut'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'
             }`}
           >
             Pengikut ({followers.length})
