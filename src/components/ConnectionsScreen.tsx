@@ -24,37 +24,39 @@ export default function ConnectionsScreen({
   onBack: () => void;
   onStartChat: (userId: string) => void;
 }) {
-  const [connections, setConnections] = useState<Connection[]>([]);
+  const [activeTab, setActiveTab] = useState<'mengikuti' | 'pengikut'>('mengikuti');
+  const [following, setFollowing] = useState<Connection[]>([]);
+  const [followers, setFollowers] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
-    fetchConnections();
+    fetchData();
   }, []);
 
-  const fetchConnections = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
       const supabase = getSupabaseClient();
-      // Get the IDs of users this user is connected to
-      const { data: connData, error: connError } = await supabase
-        .from('user_connections')
-        .select('connected_user_id')
-        .eq('user_id', session.user.id);
+      
+      // 1. Fetch Following (Mengikuti)
+      const { data: followingData } = await supabase.from('user_connections').select('connected_user_id').eq('user_id', session.user.id);
+      if (followingData && followingData.length > 0) {
+        const ids = followingData.map(d => d.connected_user_id);
+        const { data: profiles } = await supabase.from('profiles').select('id, name, username, mosque, avatar_url').in('id', ids);
+        setFollowing(profiles || []);
+      } else { 
+        setFollowing([]); 
+      }
 
-      if (connError) throw connError;
-
-      if (connData && connData.length > 0) {
-        const connectedIds = connData.map(c => c.connected_user_id);
-        // Fetch the actual profiles for those IDs
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, name, username, mosque, avatar_url')
-          .in('id', connectedIds);
-          
-        if (profilesError) throw profilesError;
-        setConnections(profilesData || []);
-      } else {
-        setConnections([]);
+      // 2. Fetch Followers (Pengikut)
+      const { data: followersData } = await supabase.from('user_connections').select('user_id').eq('connected_user_id', session.user.id);
+      if (followersData && followersData.length > 0) {
+        const ids = followersData.map(d => d.user_id);
+        const { data: profiles } = await supabase.from('profiles').select('id, name, username, mosque, avatar_url').in('id', ids);
+        setFollowers(profiles || []);
+      } else { 
+        setFollowers([]); 
       }
     } catch (error) {
       console.error('Error fetching connections:', error);
@@ -62,6 +64,8 @@ export default function ConnectionsScreen({
       setLoading(false);
     }
   };
+
+  const currentList = activeTab === 'mengikuti' ? following : followers;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-purple-50/20 to-pink-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
@@ -74,7 +78,7 @@ export default function ConnectionsScreen({
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative bg-gradient-to-br from-purple-600 via-pink-600 to-purple-700 dark:from-purple-700 dark:via-pink-700 dark:to-purple-800 text-white p-6"
+        className="relative bg-gradient-to-br from-purple-600 via-pink-600 to-purple-700 dark:from-purple-700 dark:via-pink-700 dark:to-purple-800 text-white p-6 pb-20"
         style={{ borderBottomLeftRadius: '2rem', borderBottomRightRadius: '2rem' }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
@@ -92,7 +96,7 @@ export default function ConnectionsScreen({
             <div className="flex-1">
               <h1 className="text-2xl font-bold mb-1">Koneksi</h1>
               <p className="text-white/80 text-sm">
-                {connections.length} Koneksi
+                Kelola jamaah yang Anda ikuti dan pengikut Anda
               </p>
             </div>
           </div>
@@ -107,6 +111,32 @@ export default function ConnectionsScreen({
         </div>
       </motion.div>
 
+      {/* Tab Bar */}
+      <div className="relative z-20 px-6 -mt-8">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-1.5 rounded-2xl shadow-lg border border-white/20 flex gap-2">
+          <button
+            onClick={() => setActiveTab('mengikuti')}
+            className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'mengikuti'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'
+            }`}
+          >
+            Mengikuti ({following.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('pengikut')}
+            className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'pengikut'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'
+            }`}
+          >
+            Pengikut ({followers.length})
+          </button>
+        </div>
+      </div>
+
       {/* Connections List */}
       <div className="relative z-10 p-6 pb-28">
         {loading ? (
@@ -114,7 +144,7 @@ export default function ConnectionsScreen({
             <Loader2 className="w-12 h-12 text-purple-600 dark:text-purple-400 animate-spin mx-auto mb-3" />
             <p className="text-gray-500 dark:text-gray-400">Memuat koneksi...</p>
           </div>
-        ) : connections.length === 0 ? (
+        ) : currentList.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -124,21 +154,25 @@ export default function ConnectionsScreen({
               <Users className="w-10 h-10 text-purple-600 dark:text-purple-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Belum ada koneksi
+              {activeTab === 'mengikuti' ? 'Belum ada yang Anda ikuti' : 'Belum ada pengikut'}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Tambahkan koneksi untuk mulai chat dengan jamaah lain
+              {activeTab === 'mengikuti' 
+                ? 'Cari dan ikuti jamaah lain untuk melihat aktivitas mereka.'
+                : 'Belum ada jamaah yang mengikuti Anda.'}
             </p>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-6 rounded-2xl font-semibold hover:shadow-lg transition-all"
-            >
-              Tambah Koneksi Pertama
-            </button>
+            {activeTab === 'mengikuti' && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-6 rounded-2xl font-semibold hover:shadow-lg transition-all"
+              >
+                Cari Jamaah
+              </button>
+            )}
           </motion.div>
         ) : (
           <div className="space-y-3">
-            {connections.map((connection, index) => (
+            {currentList.map((connection, index) => (
               <motion.div
                 key={connection.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -194,7 +228,7 @@ export default function ConnectionsScreen({
           onClose={() => setShowAddModal(false)}
           onSuccess={() => {
             setShowAddModal(false);
-            fetchConnections();
+            fetchData();
           }}
         />
       )}

@@ -38,13 +38,34 @@ export default function PublicProfileScreen({
   const [userProducts, setUserProducts] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'posts' | 'market' | 'media'>('posts');
   const [isFollowing, setIsFollowing] = useState(false);
+  const [totalConnections, setTotalConnections] = useState(0);
   
   const supabase = getSupabaseClient();
+
+  const fetchConnectionCount = async () => {
+    const targetId = user?.id;
+    if (!targetId) return;
+    
+    // Count Following
+    const { count: followingCount } = await supabase
+      .from('user_connections')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', targetId);
+      
+    // Count Followers
+    const { count: followersCount } = await supabase
+      .from('user_connections')
+      .select('*', { count: 'exact', head: true })
+      .eq('connected_user_id', targetId);
+      
+    setTotalConnections((followingCount || 0) + (followersCount || 0));
+  };
 
   useEffect(() => {
     if (user) {
       fetchProfile();
       fetchUserPosts();
+      fetchConnectionCount();
       if (activeTab === 'market') {
         fetchUserProducts();
       }
@@ -169,7 +190,6 @@ export default function PublicProfileScreen({
   };
 
   // Stats calculation
-  const totalConnections = 0;
   const totalPosts = userPosts.length;
   const totalLikes = userPosts.reduce((sum, post) => sum + (post.likes?.length || 0), 0);
   const mediaPosts = userPosts.filter(post => post.image);
@@ -703,7 +723,7 @@ function TwitterStylePost({
               {post.profiles?.name || post.user_name || 'Unknown User'}
             </span>
             <span className="text-gray-500 dark:text-gray-400 text-sm">
-              · {new Date(post.created_at).toLocaleDateString('id-ID', {
+              �� {new Date(post.created_at).toLocaleDateString('id-ID', {
                 day: 'numeric',
                 month: 'short',
               })}
