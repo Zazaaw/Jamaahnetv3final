@@ -756,7 +756,7 @@ function TwitterStylePost({
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowAdminMenu(false);
-                        onNavigate?.('timeline-detail', { ...post, _editMode: true });
+                        onNavigate?.('create-timeline', { postToEdit: post }); 
                       }}
                       className="w-full px-4 py-2 flex items-center gap-3 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                     >
