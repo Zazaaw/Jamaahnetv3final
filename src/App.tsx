@@ -261,6 +261,7 @@ function AppContent() {
           session={session}
           onBack={() => setCurrentScreen('profile')}
           onStartChat={handleStartChat}
+          onNavigate={handleNavigation}
         />
         <Toaster position="top-center" richColors />
       </>

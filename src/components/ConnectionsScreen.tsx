@@ -19,10 +19,12 @@ export default function ConnectionsScreen({
   session,
   onBack,
   onStartChat,
+  onNavigate,
 }: {
   session: any;
   onBack: () => void;
   onStartChat: (userId: string) => void;
+  onNavigate?: (screen: string, data?: any) => void;
 }) {
   const [activeTab, setActiveTab] = useState<'mengikuti' | 'pengikut'>('mengikuti');
   const [following, setFollowing] = useState<Connection[]>([]);
@@ -166,7 +168,8 @@ export default function ConnectionsScreen({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl p-5 shadow-lg border border-gray-100 dark:border-gray-700/50"
+                onClick={() => onNavigate?.('public-profile', connection)}
+                className="bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl p-5 shadow-lg border border-gray-100 dark:border-gray-700/50 cursor-pointer hover:border-purple-300 transition-colors"
               >
                 <div className="flex items-center gap-4">
                   {connection.avatar_url ? (
@@ -197,7 +200,10 @@ export default function ConnectionsScreen({
                   </div>
                   <motion.button
                     whileTap={{ scale: 0.9 }}
-                    onClick={() => onStartChat(connection.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onStartChat(connection.id);
+                    }}
                     className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-2xl hover:shadow-lg transition-all flex-shrink-0"
                   >
                     <MessageCircle className="w-5 h-5" />
