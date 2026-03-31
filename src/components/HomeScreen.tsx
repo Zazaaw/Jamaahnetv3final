@@ -453,7 +453,6 @@ function TwitterStylePost({
   const [isLiked, setIsLiked] = useState(false);
   const [comments, setComments] = useState<any[]>(post.comments || []);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [showAdminMenu, setShowAdminMenu] = useState(false);
 
   useEffect(() => {
     // Update state when post changes
@@ -717,73 +716,6 @@ function TwitterStylePost({
           </div>
         </div>
 
-        {/* Admin 3-Dots Menu - Only visible for Admin */}
-        {isAdmin && (
-          <div className="relative flex-shrink-0 ml-2">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowAdminMenu(!showAdminMenu);
-              }}
-              className="p-2 text-gray-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl transition-colors"
-            >
-              <MoreVertical className="w-5 h-5" />
-            </motion.button>
-
-            {/* Admin Dropdown Menu */}
-            <AnimatePresence>
-              {showAdminMenu && (
-                <>
-                  {/* Backdrop to close menu */}
-                  <div 
-                    className="fixed inset-0 z-30" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowAdminMenu(false);
-                    }}
-                  />
-                  
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute top-10 right-0 bg-white dark:bg-gray-800 rounded-xl shadow-2xl py-2 w-40 z-40 border border-gray-200 dark:border-gray-700"
-                  >
-                    <motion.button
-                      whileTap={{ scale: 0.97 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowAdminMenu(false);
-                        onNavigate?.('create-timeline', { postToEdit: post }); 
-                      }}
-                      className="w-full px-4 py-2 flex items-center gap-3 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                    >
-                      <Edit className="w-4 h-4" />
-                      <span className="text-sm font-semibold">Edit</span>
-                    </motion.button>
-                    
-                    <motion.button
-                      whileTap={{ scale: 0.97 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm('Yakin ingin menghapus postingan ini?')) {
-                          handleDeletePost(e);
-                        }
-                        setShowAdminMenu(false);
-                      }}
-                      className="w-full px-4 py-2 flex items-center gap-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span className="text-sm font-semibold">Hapus</span>
-                    </motion.button>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
       </div>
     </motion.div>
   );
