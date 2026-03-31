@@ -259,7 +259,7 @@ export default function ChatListScreen({
                     whileTap={{ scale: 0.9 }}
                     onClick={(e) => handleDeleteChat(chat.id, e)}
                     disabled={deletingChatId === chat.id}
-                    className="absolute top-5 right-5 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                    className="absolute top-5 right-5 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity disabled:opacity-50"
                   >
                     {deletingChatId === chat.id ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
