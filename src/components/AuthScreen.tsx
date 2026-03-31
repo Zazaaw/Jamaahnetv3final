@@ -47,7 +47,7 @@ export default function AuthScreen({
         const { data, error } = await supabase
           .from('profiles')
           .select('name')
-          .eq('member_id', invitationCode)
+          .ilike('member_id', invitationCode.trim())
           .maybeSingle();
 
         if (error) {
