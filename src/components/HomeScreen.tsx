@@ -542,6 +542,21 @@ function TwitterStylePost({
     toast.success(newIsBookmarked ? 'Post disimpan!' : 'Post dihapus dari simpanan');
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = `Lihat postingan dari ${post.profiles?.name || post.user_name} di Jamaah.net!\n\n${post.title}\n${post.content}`;
+    try {
+      if (navigator.share && window.isSecureContext) {
+        await navigator.share({ title: post.title, text: text, url: window.location.href });
+      } else {
+        await navigator.clipboard.writeText(text);
+        toast.success('Teks postingan disalin ke clipboard!');
+      }
+    } catch (error) { 
+      console.error('Share error:', error); 
+    }
+  };
+
   const handleDeletePost = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!session) return;
@@ -698,12 +713,13 @@ function TwitterStylePost({
                 </div>
               </motion.button>
 
-              {/* Share (disabled for now) */}
+              {/* Share */}
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                className="hidden flex items-center text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                onClick={handleShare}
+                className="flex items-center text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors group/btn"
               >
-                <div className="p-2 rounded-full transition-colors">
+                <div className="p-2 rounded-full group-hover/btn:bg-blue-50 dark:group-hover/btn:bg-blue-900/20 transition-colors">
                   <Share2 className="w-5 h-5" />
                 </div>
               </motion.button>
