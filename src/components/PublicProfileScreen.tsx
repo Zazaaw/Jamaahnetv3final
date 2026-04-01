@@ -38,6 +38,7 @@ export default function PublicProfileScreen({
   const [userProducts, setUserProducts] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'posts' | 'market' | 'media'>('posts');
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [totalConnections, setTotalConnections] = useState(0);
   
   const supabase = getSupabaseClient();
@@ -73,18 +74,27 @@ export default function PublicProfileScreen({
   }, [user, activeTab]);
 
   useEffect(() => {
-    const checkConnection = async () => {
+    const checkConnectionAndAdmin = async () => {
       if (!session?.user?.id || !user?.id) return;
-      const { data, error } = await supabase
+      
+      // Check Connection
+      const { data: connData } = await supabase
         .from('user_connections')
         .select('id')
         .eq('user_id', session.user.id)
         .eq('connected_user_id', user.id)
         .maybeSingle();
-      
-      if (data) setIsFollowing(true);
+      if (connData) setIsFollowing(true);
+
+      // Check Admin
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+      if (profileData?.role === 'Admin') setIsAdmin(true);
     };
-    checkConnection();
+    checkConnectionAndAdmin();
   }, [session, user]);
 
   const handleFollow = async () => {
@@ -288,6 +298,18 @@ export default function PublicProfileScreen({
               <Award className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               <span className="dark:text-white">{profile.role}</span>
             </div>
+          )}
+
+          {/* Member Card Badge */}
+          {profile?.member_id && (session?.user?.id === profile.id || isAdmin) && (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowMemberCardModal(true)}
+              className="flex-shrink-0 border border-gray-300 dark:border-gray-700 rounded-full px-4 py-1.5 text-sm font-medium flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="dark:text-white">Kartu Member</span>
+            </motion.button>
           )}
 
           {/* Stats Badges */}
@@ -723,7 +745,7 @@ function TwitterStylePost({
               {post.profiles?.name || post.user_name || 'Unknown User'}
             </span>
             <span className="text-gray-500 dark:text-gray-400 text-sm">
-              �� {new Date(post.created_at).toLocaleDateString('id-ID', {
+              ��� {new Date(post.created_at).toLocaleDateString('id-ID', {
                 day: 'numeric',
                 month: 'short',
               })}
