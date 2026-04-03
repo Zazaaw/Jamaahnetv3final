@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import emailjs from '@emailjs/browser';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, Users, ShoppingBag, TrendingUp, AlertCircle, CheckCircle, 
@@ -234,7 +235,8 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
     } catch (error) { toast.error('Failed to take down content'); }
   };
 
-  const handleApproveUser = async (userId: string) => {
+  const handleApproveUser = async (user: any) => {
+    const userId = user.id;
     try {
       const { data: existingProfile } = await supabase.from('profiles').select('member_id').eq('id', userId).single();
       let updateData: any = { status: 'Active' };
@@ -245,6 +247,26 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
       const { error } = await supabase.from('profiles').update(updateData).eq('id', userId);
       if (error) throw error;
       toast.success('User disetujui!');
+
+      // Send Email Notification
+      try {
+        if (user.email && user.email !== 'Email hidden') {
+          await emailjs.send(
+            'service_p441z', // Ganti dengan Service ID EmailJS
+            'template_k9d1jeu', // Ganti dengan Template ID EmailJS
+            {
+              to_email: user.email,
+              to_name: user.name,
+            },
+            '2IFdOhs7McDyIdxSj' // Ganti dengan Public Key EmailJS
+          );
+          toast.success('Email notifikasi berhasil dikirim ke user!');
+        }
+      } catch (emailError) {
+        console.error('Gagal ngirim email:', emailError);
+        toast.error('User disetujui, tapi gagal mengirim email notifikasi.');
+      }
+
       fetchUsers();
     } catch (error) { toast.error('Gagal menyetujui user'); }
   };
@@ -309,7 +331,7 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
       </div>
       <div className="flex items-center gap-2 shrink-0 ml-4">
         {user.status === 'Pending' || user.status === 'pending' ? (
-          <button onClick={() => handleApproveUser(user.id)} className="px-4 py-2 text-xs font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-all">
+          <button onClick={() => handleApproveUser(user)} className="px-4 py-2 text-xs font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-all">
             Approve
           </button>
         ) : (
