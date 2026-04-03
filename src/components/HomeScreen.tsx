@@ -36,6 +36,8 @@ interface TimelinePost {
   likes?: string[];
   comments?: any[];
   is_approved?: boolean;
+  status?: string;
+  rejection_reason?: string;
 }
 
 export default function HomeScreen({ 
@@ -615,13 +617,23 @@ function TwitterStylePost({
                 month: 'short',
               })}
             </span>
-            {/* Pending Approval Badge - Only shown for unapproved posts */}
-            {post.is_approved === false && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full text-xs font-semibold">
-                ⏳ Menunggu Approve
-              </span>
-            )}
           </div>
+
+          {/* Status Badge */}
+          {!post.is_approved && (
+            <div className={`mb-3 inline-block px-3 py-2 rounded-xl border text-xs font-bold ${post.status === 'rejected' ? 'bg-red-50 border-red-200 text-red-600' : 'bg-orange-50 border-orange-200 text-orange-600'}`}>
+              {post.status === 'rejected' ? '❌ Postingan Ditolak / Di-Take Down' : '⏳ Menunggu Persetujuan Admin'}
+            </div>
+          )}
+
+          {/* Rejection Reason Box */}
+          {post.status === 'rejected' && post.rejection_reason && (
+            <div className="mb-4 p-3 bg-red-50/50 border border-red-200 rounded-xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+              <p className="text-[10px] font-bold text-red-800 uppercase tracking-wider mb-1 pl-2">Alasan Admin:</p>
+              <p className="text-sm font-medium text-red-700 pl-2 leading-relaxed">{post.rejection_reason}</p>
+            </div>
+          )}
 
           {/* Title & Content */}
           <div className="mb-3">
