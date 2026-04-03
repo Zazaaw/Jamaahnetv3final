@@ -122,73 +122,62 @@ export default function HomeScreen({
     if (!session) return;
 
     try {
+      const supabase = getSupabaseClient();
       const notifs: Notification[] = [];
-
-      // Check for new products (C2C)
-      const productsResponse = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/marketplace/c2c`,
-        {
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
-        }
-      );
-      const products = await productsResponse.json();
-      const newProducts = products.filter((p: any) => 
-        Date.now() - p.created_at < 24 * 60 * 60 * 1000 // 24 hours
-      );
       
-      if (newProducts.length > 0) {
+      // Kita ambil data 24 jam terakhir
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+      // 1. Cek Produk Baru di Pasar
+      const { count: productCount } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', oneDayAgo);
+      
+      if (productCount && productCount > 0) {
         notifs.push({
           type: 'product',
-          count: newProducts.length,
-          message: `${newProducts.length} produk baru di Pasar Jamaah`
+          count: productCount,
+          message: `${productCount} produk baru di Pasar Jamaah`
         });
       }
 
-      // Check for new donation campaigns
-      const campaignsResponse = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/donations/campaigns`,
-        {
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
-        }
-      );
-      const campaigns = await campaignsResponse.json();
-      const newCampaigns = campaigns.filter((c: any) => 
-        Date.now() - c.created_at < 24 * 60 * 60 * 1000 // 24 hours
-      );
-      
-      if (newCampaigns.length > 0) {
+      // 2. Cek Kampanye Donasi Baru
+      const { count: campaignCount } = await supabase
+        .from('donation_campaigns')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', oneDayAgo);
+        
+      if (campaignCount && campaignCount > 0) {
         notifs.push({
           type: 'donation',
-          count: newCampaigns.length,
-          message: `${newCampaigns.length} kampanye donasi baru`
+          count: campaignCount,
+          message: `${campaignCount} kampanye donasi baru`
         });
       }
 
-      // Check for unread chats
-      const chatsResponse = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/chats`,
-        {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
+      // 3. Cek Pesan Chat Baru
+      const { data: userChats } = await supabase
+        .from('chats')
+        .select('id')
+        .contains('participants', [session.user.id]);
+        
+      if (userChats && userChats.length > 0) {
+        const chatIds = userChats.map(c => c.id);
+        const { count: messageCount } = await supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .in('chat_id', chatIds)
+          .neq('sender_id', session.user.id)
+          .gte('created_at', oneDayAgo);
+          
+        if (messageCount && messageCount > 0) {
+          notifs.push({
+            type: 'chat',
+            count: messageCount,
+            message: `${messageCount} pesan chat baru masuk`
+          });
         }
-      );
-      const chats = await chatsResponse.json();
-      const unreadChats = chats.filter((chat: any) => {
-        const lastMessage = chat.messages[chat.messages.length - 1];
-        return lastMessage && lastMessage.sender_id !== session.user.id;
-      });
-      
-      if (unreadChats.length > 0) {
-        notifs.push({
-          type: 'chat',
-          count: unreadChats.length,
-          message: `${unreadChats.length} pesan baru`
-        });
       }
 
       setNotifications(notifs);
