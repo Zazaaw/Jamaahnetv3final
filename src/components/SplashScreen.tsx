@@ -1,25 +1,45 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Building2 } from 'lucide-react';
+import Lottie from 'lottie-react';
 
 export default function SplashScreen() {
+  const [animationData, setAnimationData] = useState<any>(null);
+
+  useEffect(() => {
+    // Jalur VVIP: Ambil animasi langsung dari folder public tanpa lewat mesin Vite
+    fetch('https://uskqgyaxwcnjrizgppdq.supabase.co/storage/v1/object/public/assets/mosque.json')
+      .then((response) => response.json())
+      .then((data) => setAnimationData(data))
+      .catch((error) => console.error('Gagal memuat animasi:', error));
+  }, []);
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col items-center justify-center overflow-hidden">
       
-      {/* Ikon Masjid dengan efek Pulsing lembut */}
+      {/* Container Animasi Lottie */}
       <motion.div
-        animate={{ scale: [1, 1.1, 1], opacity: [0.7, 1, 0.7] }}
-        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-        className="w-24 h-24 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mb-6 shadow-sm border border-emerald-100 dark:border-emerald-900/50"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="w-48 h-48 md:w-64 md:h-64 mb-4 flex items-center justify-center"
       >
-        <Building2 className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
+        {animationData ? (
+          <Lottie 
+            animationData={animationData} 
+            loop={true} 
+            className="w-full h-full"
+          />
+        ) : (
+          // Lingkaran loading cadangan selama Lottie-nya didownload
+          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+        )}
       </motion.div>
 
       {/* Teks Brand - Clean & Tajam */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
+        transition={{ duration: 0.8, delay: 0.3 }}
         className="text-center"
       >
         <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-2">
@@ -30,7 +50,7 @@ export default function SplashScreen() {
         </p>
       </motion.div>
 
-      {/* Loading Dots Bouncing - Super Smooth */}
+      {/* Loading Dots Opsional */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
