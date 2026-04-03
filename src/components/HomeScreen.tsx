@@ -6,6 +6,7 @@ import { getSupabaseClient } from '../utils/supabase/client';
 import { IslamicPattern, MosqueIcon } from './IslamicPattern';
 import DynamicIslamicHeader from './DynamicIslamicHeader';
 import NotificationBell from './NotificationBell';
+import { toast } from 'sonner@2.0.3';
 
 interface Announcement {
   id: string;
@@ -535,16 +536,22 @@ function TwitterStylePost({
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const text = `Lihat postingan dari ${post.profiles?.name || post.user_name} di Jamaah.net!\n\n${post.title}\n${post.content}`;
+    const text = `Lihat postingan dari ${post.profiles?.name || post.user_name} di Jamaah.net!\n\n${post.title || ''}\n${post.content}`;
+    
     try {
       if (navigator.share && window.isSecureContext) {
-        await navigator.share({ title: post.title, text: text, url: window.location.href });
+        await navigator.share({ title: post.title || 'Jamaah.net Post', text: text, url: window.location.href });
       } else {
-        await navigator.clipboard.writeText(text);
-        toast.success('Teks postingan disalin ke clipboard!');
+        throw new Error('Share API not supported');
       }
-    } catch (error) { 
-      console.error('Share error:', error); 
+    } catch (error: any) { 
+      // Fallback if Share is blocked (e.g., in iframes/Figma preview) or unsupported
+      try {
+        await navigator.clipboard.writeText(text);
+        toast.success('Link & teks berhasil disalin ke clipboard!');
+      } catch (clipboardError) {
+        toast.error('Gagal menyalin teks. Fitur diblokir oleh browser.');
+      }
     }
   };
 
