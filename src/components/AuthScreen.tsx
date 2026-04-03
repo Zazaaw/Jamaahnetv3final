@@ -78,14 +78,14 @@ export default function AuthScreen({
   const handleGoogleLogin = async () => {
     try {
       setError('');
-      // Note: User must complete setup at https://supabase.com/docs/guides/auth/social-login/auth-google
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
       });
-      
-      if (error) {
-        setError(error.message);
-      }
+      if (error) throw error;
+      // Redirect is handled automatically by Supabase
     } catch (err: any) {
       setError(err.message || 'Gagal login dengan Google');
     }
