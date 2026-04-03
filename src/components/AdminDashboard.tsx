@@ -18,7 +18,7 @@ interface AdminDashboardProps {
   onNavigate: (screen: string) => void;
 }
 
-type TabType = 'overview' | 'users' | 'timeline' | 'events' | 'marketplace' | 'campaigns' | 'articles' | 'moderation' | 'reports';
+type TabType = 'overview' | 'users' | 'timeline' | 'events' | 'marketplace' | 'campaigns' | 'articles' | 'reports';
 
 export default function AdminDashboard({ session, onNavigate }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -37,7 +37,6 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
   const [products, setProducts] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [articles, setArticles] = useState<any[]>([]);
-  const [moderationQueue, setModerationQueue] = useState<any[]>([]);
   const [userReports, setUserReports] = useState<any[]>([]);
   const [marketplaceCategory, setMarketplaceCategory] = useState('All');
   
@@ -57,7 +56,7 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
     try {
       await Promise.all([
         fetchUsers(), fetchTimelinePosts(), fetchEvents(), fetchCampaigns(),
-        fetchProducts(), fetchArticles(), fetchModerationQueue(), fetchUserReports()
+        fetchProducts(), fetchArticles(), fetchUserReports()
       ]);
     } catch (error) {
       console.error('Error fetching admin data:', error);
@@ -95,7 +94,7 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
       if (data) {
         setTimelinePosts(data.map((p: any) => ({
           id: p.id, title: p.title || (p.content ? p.content.substring(0, 50) + '...' : 'No Content'),
-          content: p.content, is_approved: p.is_approved, status: p.is_approved ? 'Approved' : 'Pending',
+          content: p.content, image: p.image_url || p.image || null, is_approved: p.is_approved, status: p.is_approved ? 'Approved' : 'Pending',
           date: new Date(p.created_at).toISOString().split('T')[0], views: p.views || 0
         })));
         setStats(prev => ({ ...prev, totalPosts: data.length }));
@@ -147,28 +146,6 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
     } catch (error) {}
   };
 
-  const fetchModerationQueue = async () => {
-    try {
-      const { data: postsData } = await supabase.from('timeline_posts').select('*, profiles(name)').order('created_at', { ascending: false }).limit(20);
-      const { data: productsData } = await supabase.from('products').select('*, profiles(name)').order('created_at', { ascending: false }).limit(20);
-
-      const moderationItems: any[] = [];
-      if (postsData) postsData.forEach((post: any) => moderationItems.push({
-        id: post.id, type: 'post', userName: post.profiles?.full_name || post.profiles?.name || 'Anonymous User',
-        userId: post.user_id, content: post.content || 'No content', image: post.image_url || null,
-        timestamp: post.created_at, status: post.status || (post.is_approved ? 'approved' : 'pending'), title: post.title || null
-      }));
-      if (productsData) productsData.forEach((product: any) => moderationItems.push({
-        id: product.id, type: 'product', userName: product.profiles?.full_name || product.profiles?.name || 'Anonymous User',
-        userId: product.user_id, content: product.description || product.name || 'No description',
-        image: product.image_url || product.images?.[0] || null, timestamp: product.created_at,
-        status: product.status || 'pending', title: product.name || null, price: product.price || 0
-      }));
-      moderationItems.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      setModerationQueue(moderationItems);
-    } catch (error) {}
-  };
-
   const fetchUserReports = async () => {
     try {
       const { data: postsData } = await supabase.from('timeline_posts').select('*, profiles(name)').limit(5);
@@ -188,27 +165,44 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
   };
 
   // --- ACTIONS ---
-  const handleApproveContent = async (itemId: string, itemType: string) => {
+  const handleApproveTimeline = async (id: string) => {
     try {
-      const table = itemType === 'post' ? 'timeline_posts' : 'products';
-      const updateObj = itemType === 'post' ? { is_approved: true } : { status: 'approved' };
-      const { error } = await supabase.from(table).update(updateObj).eq('id', itemId);
+      const { error } = await supabase.from('timeline_posts').update({ is_approved: true }).eq('id', id);
       if (error) throw error;
-      toast.success(`${itemType === 'post' ? 'Post' : 'Product'} approved!`);
-      fetchModerationQueue();
-    } catch (error) { toast.error('Failed to approve content'); }
+      toast.success('Post approved!');
+      fetchTimelinePosts();
+    } catch (error) { toast.error('Failed to approve post'); }
   };
 
-  const handleTakeDownContent = async (itemId: string, itemType: string) => {
-    const reason = window.prompt(`Masukkan alasan penolakan untuk ${itemType} ini:`);
+  const handleRejectTimeline = async (id: string) => {
+    const reason = window.prompt('Masukkan alasan penolakan/menyembunyikan post ini:');
     if (reason === null) return;
     try {
-      const table = itemType === 'post' ? 'timeline_posts' : 'products';
-      const { error } = await supabase.from(table).delete().eq('id', itemId);
+      const { error } = await supabase.from('timeline_posts').update({ is_approved: false }).eq('id', id);
       if (error) throw error;
-      toast.success(`${itemType === 'post' ? 'Post' : 'Product'} taken down. Alasan: ${reason}`);
-      fetchModerationQueue();
-    } catch (error) { toast.error('Failed to take down content'); }
+      toast.success(`Post disembunyikan. Alasan: ${reason}`);
+      fetchTimelinePosts();
+    } catch (error) { toast.error('Failed'); }
+  };
+
+  const handleApproveProduct = async (id: string) => {
+    try {
+      const { error } = await supabase.from('products').update({ status: 'approved' }).eq('id', id);
+      if (error) throw error;
+      toast.success('Product approved!');
+      fetchProducts();
+    } catch (error) { toast.error('Failed to approve product'); }
+  };
+
+  const handleRejectProduct = async (id: string) => {
+    const reason = window.prompt('Masukkan alasan penolakan/menyembunyikan produk ini:');
+    if (reason === null) return;
+    try {
+      const { error } = await supabase.from('products').update({ status: 'rejected' }).eq('id', id);
+      if (error) throw error;
+      toast.success(`Produk ditolak/disembunyikan. Alasan: ${reason}`);
+      fetchProducts();
+    } catch (error) { toast.error('Failed'); }
   };
 
   const handleDismissReport = async () => {
@@ -254,13 +248,19 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm('Delete this user?')) return;
+    if (!window.confirm('Delete this user? (Note: Ensure they have no active posts/products first)')) return;
+    
+    setUsers(prev => prev.filter(u => u.id !== userId)); // Optimistic UI
+    
     try {
       const { error } = await supabase.from('profiles').delete().eq('id', userId);
       if (error) throw error;
-      toast.success('User deleted');
-      fetchUsers();
-    } catch (error) { toast.error('Gagal menghapus user'); }
+      toast.success('User deleted successfully');
+    } catch (error: any) { 
+      console.error('Delete error:', error);
+      toast.error('Gagal menghapus! Pastikan user tidak memiliki data terkait (post/produk) atau cek RLS database.');
+      fetchUsers(); // Revert on failure
+    }
   };
 
   // Generic Deletes
@@ -293,7 +293,7 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
             {user.role === 'Admin' && <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-gray-900 text-white dark:bg-white dark:text-gray-900">ADMIN</span>}
             {user.role === 'pengurus_masjid' && <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">PENGURUS</span>}
           </div>
-          <p className="text-xs text-gray-500 truncate mt-0.5">{user.email} • <span className="font-mono">{user.memberId}</span></p>
+          <p className="text-xs text-gray-500 truncate mt-0.5">{user.email} • <span className="font-mono">{user.memberId?.toUpperCase()}</span></p>
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0 ml-4">
@@ -342,7 +342,6 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
           <TabPill active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Dashboard" icon={Activity} />
           <TabPill active={activeTab === 'users'} onClick={() => setActiveTab('users')} label="Users" icon={Users} />
-          <TabPill active={activeTab === 'moderation'} onClick={() => setActiveTab('moderation')} label="Moderation" icon={ShieldAlert} alert={moderationQueue.filter(i=>i.status==='pending').length > 0} />
           <TabPill active={activeTab === 'timeline'} onClick={() => setActiveTab('timeline')} label="Timeline" icon={MessageSquare} />
           <TabPill active={activeTab === 'marketplace'} onClick={() => setActiveTab('marketplace')} label="Market" icon={ShoppingBag} />
           <TabPill active={activeTab === 'campaigns'} onClick={() => setActiveTab('campaigns')} label="Campaigns" icon={TrendingUp} />
@@ -414,21 +413,6 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                 </div>
                 <div className="space-y-3">
                   
-                  {/* Mod Queue Summary */}
-                  <div onClick={() => setActiveTab('moderation')} className="bg-white dark:bg-gray-900 p-5 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 cursor-pointer hover:border-red-200 transition-colors flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-2xl flex items-center justify-center"><ShieldAlert className="w-5 h-5"/></div>
-                      <div>
-                        <h4 className="font-bold text-gray-900 dark:text-white text-sm">Content Moderation</h4>
-                        <p className="text-xs text-gray-500 mt-0.5">Posts & products pending review</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg font-black text-gray-900 dark:text-white">{moderationQueue.filter(i=>i.status==='pending').length}</span>
-                      <ChevronRight className="w-5 h-5 text-gray-300" />
-                    </div>
-                  </div>
-
                   {/* Pending Users Summary */}
                   <div onClick={() => setActiveTab('users')} className="bg-white dark:bg-gray-900 p-5 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 cursor-pointer hover:border-orange-200 transition-colors flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -469,46 +453,7 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
             </motion.div>
           )}
 
-          {/* 4. MODERATION TAB (SaaS Style) */}
-          {activeTab === 'moderation' && (
-            <motion.div key="moderation" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-               <div className="space-y-4">
-                 {moderationQueue.length === 0 ? (
-                   <div className="bg-white dark:bg-gray-900 rounded-[2rem] p-12 text-center shadow-sm border border-gray-100">
-                      <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4"><CheckCircle className="w-8 h-8 text-emerald-500" /></div>
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">All Clear!</h3>
-                      <p className="text-sm text-gray-500 mt-1">No content pending moderation.</p>
-                   </div>
-                 ) : (
-                   moderationQueue.map((item) => (
-                     <div key={`${item.type}-${item.id}`} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 shadow-sm">
-                       <div className="flex justify-between items-start mb-4">
-                         <div className="flex items-center gap-3">
-                           <div className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">{item.userName.charAt(0)}</div>
-                           <div>
-                             <span className="text-sm font-bold text-gray-900 dark:text-white block">{item.userName}</span>
-                             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{item.type}</span>
-                           </div>
-                         </div>
-                         <span className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase ${item.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>{item.status}</span>
-                       </div>
-                       
-                       <div className="mb-6 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700/50">
-                         {item.title && <h4 className="font-bold text-gray-900 dark:text-white text-sm mb-2">{item.title}</h4>}
-                         <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{item.content}</p>
-                         {item.image && <img src={item.image} className="mt-4 rounded-xl max-h-48 w-full object-cover border border-gray-200" alt=""/>}
-                       </div>
 
-                       <div className="flex gap-3">
-                         <button onClick={() => handleApproveContent(item.id, item.type)} className="flex-1 py-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-xl text-sm font-bold hover:shadow-lg transition-all shadow-sm">Approve</button>
-                         <button onClick={() => handleTakeDownContent(item.id, item.type)} className="flex-1 py-3 bg-white text-red-600 border border-red-200 dark:bg-gray-900 dark:border-red-900/50 rounded-xl text-sm font-bold hover:bg-red-50 transition-colors shadow-sm">Take Down</button>
-                       </div>
-                     </div>
-                   ))
-                 )}
-               </div>
-            </motion.div>
-          )}
 
           {/* 5. TIMELINE / POSTS TAB */}
           {activeTab === 'timeline' && (
@@ -524,9 +469,12 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                       <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase shrink-0 ${post.is_approved ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{post.status}</span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-5 whitespace-pre-wrap leading-relaxed">{post.content}</p>
+                    {post.image && (
+                      <img src={post.image} alt="Post image" className="w-full max-h-64 object-cover rounded-xl mb-4 border border-gray-100 dark:border-gray-800 shadow-sm" />
+                    )}
                     <div className="flex gap-2">
                       {!post.is_approved && <button onClick={() => handleApproveTimeline(post.id)} className="flex-1 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-xl">Approve</button>}
-                      {post.is_approved && <button onClick={() => handleTakeDownContent(post.id, 'post')} className="flex-1 py-2 text-xs font-bold text-amber-700 bg-amber-50 rounded-xl">Hide Post</button>}
+                      {post.is_approved && <button onClick={() => handleRejectTimeline(post.id)} className="flex-1 py-2 text-xs font-bold text-amber-700 bg-amber-50 rounded-xl">Hide Post</button>}
                       <button onClick={() => handleDeleteItem(post.id, 'timeline_posts')} className="px-4 py-2 text-xs font-bold text-red-600 bg-red-50 rounded-xl"><Trash2 className="w-4 h-4"/></button>
                     </div>
                   </div>
@@ -552,7 +500,10 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                       </div>
                       <div className="flex gap-2 mt-4">
                         {product.status === 'pending' && (
-                          <button onClick={() => handleApproveContent(product.id, 'product')} className="flex-1 bg-gray-900 text-white py-2 rounded-xl flex justify-center"><CheckCircle className="w-4 h-4"/></button>
+                          <button onClick={() => handleApproveProduct(product.id)} className="flex-1 bg-gray-900 text-white py-2 rounded-xl flex justify-center"><CheckCircle className="w-4 h-4"/></button>
+                        )}
+                        {product.status === 'pending' && (
+                          <button onClick={() => handleRejectProduct(product.id)} className="flex-1 bg-amber-50 text-amber-600 py-2 rounded-xl flex justify-center"><X className="w-4 h-4"/></button>
                         )}
                         <button onClick={() => handleDeleteItem(product.id, 'products')} className="flex-1 bg-red-50 text-red-600 py-2 rounded-xl flex justify-center"><Trash2 className="w-4 h-4"/></button>
                       </div>
