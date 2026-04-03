@@ -94,7 +94,7 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
       if (data) {
         setTimelinePosts(data.map((p: any) => ({
           id: p.id, title: p.title || (p.content ? p.content.substring(0, 50) + '...' : 'No Content'),
-          content: p.content, image: p.image_url || p.image || null, is_approved: p.is_approved, status: p.is_approved ? 'Approved' : 'Pending',
+          content: p.content, image: p.image_url || p.image || null, is_approved: p.is_approved, status: p.status || (p.is_approved ? 'Approved' : 'Pending'), rejection_reason: p.rejection_reason,
           date: new Date(p.created_at).toISOString().split('T')[0], views: p.views || 0
         })));
         setStats(prev => ({ ...prev, totalPosts: data.length }));
@@ -175,14 +175,25 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
   };
 
   const handleRejectTimeline = async (id: string) => {
-    const reason = window.prompt('Masukkan alasan penolakan/menyembunyikan post ini:');
+    const reason = window.prompt('Masukkan alasan penolakan postingan ini:');
     if (reason === null) return;
     try {
-      const { error } = await supabase.from('timeline_posts').update({ is_approved: false }).eq('id', id);
+      const { error } = await supabase.from('timeline_posts').update({ is_approved: false, status: 'rejected', rejection_reason: reason }).eq('id', id);
       if (error) throw error;
-      toast.success(`Post disembunyikan. Alasan: ${reason}`);
+      toast.success('Postingan ditolak.');
       fetchTimelinePosts();
-    } catch (error) { toast.error('Failed'); }
+    } catch (error) { toast.error('Gagal menolak postingan'); }
+  };
+
+  const handleTakeDownTimeline = async (id: string) => {
+    const reason = window.prompt('Masukkan alasan Take Down postingan ini:');
+    if (reason === null) return;
+    try {
+      const { error } = await supabase.from('timeline_posts').update({ is_approved: false, status: 'rejected', rejection_reason: `[TAKE DOWN] ${reason}` }).eq('id', id);
+      if (error) throw error;
+      toast.success('Postingan berhasil di-Take Down.');
+      fetchTimelinePosts();
+    } catch (error) { toast.error('Gagal melakukan Take Down'); }
   };
 
   const handleApproveProduct = async (id: string) => {
@@ -472,10 +483,19 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                     {post.image && (
                       <img src={post.image} alt="Post image" className="w-full max-h-64 object-cover rounded-xl mb-4 border border-gray-100 dark:border-gray-800 shadow-sm" />
                     )}
-                    <div className="flex gap-2">
-                      {!post.is_approved && <button onClick={() => handleApproveTimeline(post.id)} className="flex-1 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-xl">Approve</button>}
-                      {post.is_approved && <button onClick={() => handleRejectTimeline(post.id)} className="flex-1 py-2 text-xs font-bold text-amber-700 bg-amber-50 rounded-xl">Hide Post</button>}
-                      <button onClick={() => handleDeleteItem(post.id, 'timeline_posts')} className="px-4 py-2 text-xs font-bold text-red-600 bg-red-50 rounded-xl"><Trash2 className="w-4 h-4"/></button>
+                    <div className="flex gap-2 pt-3 border-t border-gray-50 dark:border-gray-800">
+                      {/* If pending, show Approve & Reject */}
+                      {(!post.is_approved && post.status !== 'rejected') && (
+                        <>
+                          <button onClick={() => handleApproveTimeline(post.id)} className="flex-1 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-lg">Approve</button>
+                          <button onClick={() => handleRejectTimeline(post.id)} className="flex-1 py-1.5 text-xs font-bold text-orange-700 bg-orange-50 rounded-lg">Reject</button>
+                        </>
+                      )}
+                      {/* If approved, show Take Down */}
+                      {post.is_approved && (
+                        <button onClick={() => handleTakeDownTimeline(post.id)} className="flex-1 py-1.5 text-xs font-bold text-amber-700 bg-amber-50 rounded-lg">Take Down</button>
+                      )}
+                      <button onClick={() => handleDeleteItem(post.id, 'timeline_posts')} className="flex-1 py-1.5 text-xs font-bold text-red-600 bg-red-50 rounded-lg">Delete</button>
                     </div>
                   </div>
                 ))}

@@ -1315,7 +1315,7 @@ function MemberCard3DModal({
               <div className="flex flex-col items-center justify-center">
                 <p className="text-white/60 text-[10px] tracking-widest font-medium uppercase mb-3">MEMBER ID</p>
                 <p className="font-mono text-4xl font-bold text-white tracking-widest drop-shadow-md">
-                  {profile?.member_id || 'JM-202401-XXXX'}
+                  {profile?.member_id?.toUpperCase() || 'JM-202401-XXXX'}
                 </p>
               </div>
 
