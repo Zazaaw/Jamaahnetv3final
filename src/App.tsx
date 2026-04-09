@@ -366,7 +366,7 @@ function AppContent() {
     return (
       <>
         <ContactScreen 
-          onBack={() => setCurrentScreen('profile')}
+          onBack={() => setCurrentScreen('home')}
         />
         <Toaster position="top-center" richColors />
       </>
@@ -377,7 +377,7 @@ function AppContent() {
     return (
       <>
         <AboutJamaah 
-          onBack={() => setCurrentScreen('profile')}
+          onBack={() => setCurrentScreen('home')}
         />
         <Toaster position="top-center" richColors />
       </>

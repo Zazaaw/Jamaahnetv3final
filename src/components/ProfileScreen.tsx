@@ -748,31 +748,9 @@ export default function ProfileScreen({
                   delay={0.3}
                 />
 
-                {/* Contact Us */}
-                <SettingsMenuItem
-                  icon={Phone}
-                  title="Hubungi Kami"
-                  subtitle="Bantuan & dukungan"
-                  gradient="from-violet-500 to-purple-500"
-                  onClick={() => {
-                    setShowSettingsMenu(false);
-                    onNavigate('contact');
-                  }}
-                  delay={0.35}
-                />
+                {/* Contact Us Removed */}
 
-                {/* About Jamaah.net */}
-                <SettingsMenuItem
-                  icon={Info}
-                  title="Tentang Jamaah.net"
-                  subtitle="Visi & misi komunitas"
-                  gradient="from-teal-500 to-cyan-500"
-                  onClick={() => {
-                    setShowSettingsMenu(false);
-                    onNavigate('about');
-                  }}
-                  delay={0.4}
-                />
+                {/* About Jamaah.net Removed */}
 
                 {/* Admin Dashboard - Only visible for Admin role */}
                 {profile?.role === 'Admin' && (

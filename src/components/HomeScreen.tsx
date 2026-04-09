@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, DollarSign, Store, Bell, MessageCircle, ShoppingBag, Heart, Users, Plus, Bookmark, Repeat2, Share2, MoreVertical } from 'lucide-react';
+import { Calendar, DollarSign, Store, Bell, MessageCircle, ShoppingBag, Heart, Users, Plus, Bookmark, Repeat2, Share2, MoreVertical, Info, Headset } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getSupabaseClient } from '../utils/supabase/client';
@@ -329,34 +329,58 @@ export default function HomeScreen({
           </motion.div>
         )}
 
-        {/* Quick Access Grid - Floating Style */}
+        {/* Quick Access Menu - Minimalist Modern Style */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="grid grid-cols-3 gap-4"
+          className="mx-4 md:mx-0 flex flex-col gap-5 bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl p-5 border border-gray-100 dark:border-gray-700/50 shadow-sm"
         >
-          <QuickAccessButton
-            icon={Calendar}
-            label="Kegiatan"
-            color="from-blue-500 to-blue-600"
-            delay={0.1}
-            onClick={() => onNavigate?.('calendar')}
-          />
-          <QuickAccessButton
-            icon={Store}
-            label="Pasar"
-            color="from-orange-500 to-orange-600"
-            delay={0.2}
-            onClick={() => onNavigate?.('marketplace')}
-          />
-          <QuickAccessButton
-            icon={DollarSign}
-            label="Donasi"
-            color="from-emerald-500 to-emerald-600"
-            delay={0.3}
-            onClick={() => onNavigate?.('donation')}
-          />
+          {/* TOP ROW: 3 Core Features (Gojek Style: Round Icon + Text) */}
+          <div className="flex justify-around items-start">
+            {/* Kegiatan */}
+            <button onClick={() => onNavigate?.('calendar')} className="flex flex-col items-center gap-2 group">
+              <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all shadow-sm">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Kegiatan</span>
+            </button>
+            
+            {/* Pasar */}
+            <button onClick={() => onNavigate?.('marketplace')} className="flex flex-col items-center gap-2 group">
+              <div className="w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-all shadow-sm">
+                <Store className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Pasar</span>
+            </button>
+            
+            {/* Donasi */}
+            <button onClick={() => onNavigate?.('donation')} className="flex flex-col items-center gap-2 group">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Donasi</span>
+            </button>
+          </div>
+
+          {/* BOTTOM ROW: 2 Info Buttons (Pill Style) */}
+          <div className="flex justify-center gap-3 pt-4 border-t border-gray-100 dark:border-gray-700/50">
+            <button 
+              onClick={() => onNavigate?.('about')}
+              className="flex items-center gap-2 px-4 py-2 bg-teal-50 dark:bg-teal-900/20 rounded-full border border-teal-100 dark:border-teal-800 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors flex-1 justify-center"
+            >
+              <Info className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+              <span className="text-[11px] font-bold text-teal-700 dark:text-teal-300">Tentang Jamaah</span>
+            </button>
+
+            <button 
+              onClick={() => onNavigate?.('contact')}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-full border border-emerald-100 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors flex-1 justify-center"
+            >
+              <Headset className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">Hubungi Kami</span>
+            </button>
+          </div>
         </motion.div>
 
         {/* Timeline Kegiatan Jamaah - Twitter Style Thread */}
