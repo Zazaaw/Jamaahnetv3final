@@ -27,13 +27,14 @@ import ContactScreen from './components/ContactScreen';
 import AboutJamaah from './components/AboutJamaah';
 import AdminDashboard from './components/AdminDashboard';
 import PublicProfileScreen from './components/PublicProfileScreen';
+import MemberDirectory from './components/MemberDirectory';
 import AppFooter from './components/AppFooter';
 import InitData from './components/InitData';
 import { toast } from 'sonner';
 
 const supabase = getSupabaseClient();
 
-type Screen = 'splash' | 'home' | 'explore' | 'calendar' | 'marketplace' | 'donation' | 'profile' | 'auth' | 'pending-approval' | 'product-detail' | 'chat-list' | 'chat' | 'connections' | 'article-detail' | 'all-articles' | 'create-timeline' | 'timeline-detail' | 'contact' | 'about' | 'admin-dashboard' | 'public-profile';
+type Screen = 'splash' | 'home' | 'explore' | 'calendar' | 'marketplace' | 'donation' | 'profile' | 'auth' | 'pending-approval' | 'product-detail' | 'chat-list' | 'chat' | 'connections' | 'article-detail' | 'all-articles' | 'create-timeline' | 'timeline-detail' | 'contact' | 'about' | 'admin-dashboard' | 'public-profile' | 'member-directory';
 
 export default function App() {
   return (
@@ -249,6 +250,15 @@ function AppContent() {
           session={session}
           onBack={() => setCurrentScreen('chat-list')}
         />
+        <Toaster position="top-center" richColors />
+      </>
+    );
+  }
+
+  if (currentScreen === 'member-directory') {
+    return (
+      <>
+        <MemberDirectory onNavigate={handleNavigation} />
         <Toaster position="top-center" richColors />
       </>
     );

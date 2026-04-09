@@ -698,6 +698,19 @@ export default function ProfileScreen({
                   </button>
                 </motion.div>
 
+                {/* Member Directory */}
+                <SettingsMenuItem
+                  icon={Users}
+                  title="Direktori Jamaah"
+                  subtitle="Temukan & kenali sesama"
+                  gradient="from-emerald-500 to-teal-500"
+                  onClick={() => {
+                    setShowSettingsMenu(false);
+                    onNavigate('member-directory');
+                  }}
+                  delay={0.15}
+                />
+
                 {/* Connections */}
                 <SettingsMenuItem
                   icon={Users}
