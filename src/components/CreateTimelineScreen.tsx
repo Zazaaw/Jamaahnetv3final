@@ -151,7 +151,7 @@ export default function CreateTimelineScreen({
           </motion.button>
           <div>
             <h1 className="text-2xl font-bold">{isEditMode ? 'Edit Postingan' : 'Buat Postingan'}</h1>
-            <p className="text-emerald-50 text-sm">{isEditMode ? 'Perbarui kegiatan ibadahmu' : 'Bagikan kegiatan ibadahmu'}</p>
+            <p className="text-emerald-50 text-sm">{isEditMode ? 'Perbarui kegiatan ibadahmu' : 'Bagikan informasi sosial dan bisnismu!'}</p>
           </div>
         </div>
       </motion.div>

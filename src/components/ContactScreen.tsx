@@ -5,38 +5,38 @@ import { IslamicPattern, MosqueIcon } from './IslamicPattern';
 
 export default function ContactScreen({ onBack }: { onBack: () => void }) {
   const officeHours = [
-    { day: 'Senin - Jumat', time: '08.00 - 17.00 WIB' },
-    { day: 'Sabtu', time: '08.00 - 12.00 WIB' },
-    { day: 'Minggu & Libur', time: 'Tutup' },
+    { day: 'Senin – Jumat', time: '08.00 - 17.00' },
+    { day: 'Sabtu', time: '08.00 - 12.00' },
+    { day: 'Ahad & Hari Libur', time: 'Tutup' },
   ];
 
   const contactMethods = [
     {
       icon: Phone,
       title: 'WhatsApp Admin',
-      value: '+62 812-3456-7890',
-      link: 'https://wa.me/6281234567890',
+      value: '+62 851-6151-1017',
+      link: 'https://wa.me/6285161511017',
       gradient: 'from-green-500 to-emerald-500',
     },
     {
       icon: Mail,
       title: 'Email',
-      value: 'admin@jamaah.net',
-      link: 'mailto:admin@jamaah.net',
+      value: 'jamaahdotnet@gmail.com',
+      link: 'mailto:jamaahdotnet@gmail.com',
       gradient: 'from-blue-500 to-indigo-500',
     },
     {
       icon: Instagram,
       title: 'Instagram',
-      value: '@jamaah.net',
-      link: 'https://instagram.com/jamaah.net',
+      value: '@jamaahdotnet.id',
+      link: 'https://www.instagram.com/jamaahdotnet.id?igsh=MXY3NW82OHFoYWRvNQ%3D%3D&utm_source=qr',
       gradient: 'from-pink-500 to-purple-500',
     },
     {
       icon: Facebook,
       title: 'Facebook',
       value: 'Jamaah.net',
-      link: 'https://facebook.com/jamaah.net',
+      link: 'https://www.facebook.com/profile.php?id=61580706586763',
       gradient: 'from-blue-600 to-blue-700',
     },
   ];
@@ -244,10 +244,10 @@ export default function ContactScreen({ onBack }: { onBack: () => void }) {
                   Hotline Admin Darurat
                 </p>
                 <a 
-                  href="tel:+6281396081230"
+                  href="tel:+6285161511017"
                   className="block text-4xl font-bold font-mono text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors mb-2"
                 >
-                  081396081230
+                  085161511017
                 </a>
                 <div className="inline-flex items-center gap-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-full px-4 py-1.5">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -261,7 +261,7 @@ export default function ContactScreen({ onBack }: { onBack: () => void }) {
               <div className="space-y-3">
                 {/* WhatsApp Button - Primary */}
                 <motion.a
-                  href="https://wa.me/6281396081230"
+                  href="https://wa.me/6285161511017"
                   target="_blank"
                   rel="noopener noreferrer"
                   whileHover={{ scale: 1.02 }}
@@ -275,7 +275,7 @@ export default function ContactScreen({ onBack }: { onBack: () => void }) {
 
                 {/* Call Button - Secondary */}
                 <motion.a
-                  href="tel:+6281396081230"
+                  href="tel:+6285161511017"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="w-full bg-white dark:bg-gray-700 border-2 border-red-200 dark:border-red-700 text-red-600 dark:text-red-400 py-4 rounded-xl font-semibold hover:bg-red-50 dark:hover:bg-red-900/30 transition-all flex items-center justify-center gap-3 group"
@@ -340,31 +340,6 @@ export default function ContactScreen({ onBack }: { onBack: () => void }) {
             ))}
           </div>
         </div>
-
-        {/* Address */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm"
-        >
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
-              <MapPin className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                📍 Alamat Kantor
-              </h4>
-              <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-                Jl. Masjid Raya No. 123<br />
-                Kelurahan Sejahtera, Kecamatan Bahagia<br />
-                Jakarta Selatan 12345<br />
-                Indonesia
-              </p>
-            </div>
-          </div>
-        </motion.div>
 
         {/* FAQ Quick Tips */}
         <motion.div
