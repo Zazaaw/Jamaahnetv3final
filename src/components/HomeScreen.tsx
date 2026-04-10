@@ -210,10 +210,11 @@ export default function HomeScreen({
         showNotifications={showNotifications}
         onToggleNotifications={() => setShowNotifications(!showNotifications)}
         session={session}
+        onNavigate={onNavigate}
       />
 
-      {/* Notifications Dropdown */}
-      <div className="relative">
+      {/* Old Notifications Dropdown - REMOVED, now using NotificationDropdown in header */}
+      {/* <div className="relative">
         <AnimatePresence>
           {showNotifications && (
             <motion.div
@@ -267,7 +268,7 @@ export default function HomeScreen({
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </div> */}
 
       <div className="relative z-10 p-6 space-y-6">
         {/* Announcement Carousel - Modern Card Style */}

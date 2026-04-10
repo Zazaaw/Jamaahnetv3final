@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Toaster } from 'sonner@2.0.3';
 import { getSupabaseClient } from './utils/supabase/client';
 import { LanguageProvider } from './utils/LanguageContext';
+import { getUnreadMessageCount, subscribeToMessages } from './utils/notificationService';
 
 // Screen Imports
 import SplashScreen from './components/SplashScreen';
@@ -44,6 +45,7 @@ export default function App() {
   );
 }
 
+
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
   const [previousScreen, setPreviousScreen] = useState<Screen>('home');
@@ -55,6 +57,8 @@ function AppContent() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [editingTimeline, setEditingTimeline] = useState<any>(null);
   const [homeRefreshKey, setHomeRefreshKey] = useState(0);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('jamaah_dark_mode');
     return saved === 'true';
@@ -90,6 +94,49 @@ function AppContent() {
       clearTimeout(timer);
     };
   }, []);
+
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+  if (!session?.user?.id) return;
+
+  const updateCount = async () => {
+    const count = await getUnreadMessageCount(session.user.id);
+    setUnreadCount(count);
+  };
+
+  updateCount();
+  const sub = subscribeToMessages(session.user.id, updateCount);
+
+  return () => {
+    supabase.removeChannel(sub);
+    };
+  }, [session]);
+
+  // Real-time unread message count
+  useEffect(() => {
+    if (!session?.user?.id) {
+      setUnreadMessageCount(0);
+      setHasUnreadMessages(false);
+      return;
+    }
+
+    // Fetch initial count
+    const fetchUnreadCount = async () => {
+      const count = await getUnreadMessageCount(session.user.id);
+      setUnreadMessageCount(count);
+      setHasUnreadMessages(count > 0);
+    };
+    
+    fetchUnreadCount();
+
+    // Subscribe to real-time updates
+    const messageSubscription = subscribeToMessages(session.user.id, fetchUnreadCount);
+
+    return () => {
+      messageSubscription.unsubscribe();
+    };
+  }, [session?.user?.id]);
 
   const handleToggleDarkMode = () => {
     setDarkMode(prev => {
@@ -495,6 +542,7 @@ function AppContent() {
                     setCurrentScreen('auth');
                   }
                 }}
+                badge={unreadMessageCount}
               />
               <TabButton
                 icon={User}
@@ -519,12 +567,14 @@ function TabButton({
   icon: Icon, 
   active, 
   onClick,
-  isCenter = false
+  isCenter = false,
+  badge = 0
 }: { 
   icon: React.ElementType; 
   active: boolean; 
   onClick: () => void;
   isCenter?: boolean;
+  badge?: number;
 }) {
   // Special styling for center button (Plus/Create)
   if (isCenter) {
@@ -593,6 +643,24 @@ function TabButton({
           strokeWidth={active ? 2.5 : 2}
         />
       </motion.div>
+
+      {/* Badge for unread messages */}
+      {badge > 0 && (
+        <motion.div
+          className="absolute top-0 right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-lg min-w-[18px] text-center"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        >
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+          >
+            {badge > 99 ? '99+' : badge}
+          </motion.div>
+        </motion.div>
+      )}
     </motion.button>
   );
 }

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner@2.0.3';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { IslamicPattern } from './IslamicPattern';
+import { getUnreadPerChat, subscribeToMessages } from '../utils/notificationService';
 
 interface Chat {
   id: string;
@@ -33,9 +34,19 @@ export default function ChatListScreen({
   const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
   const [loading, setLoading] = useState(true);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetchChats();
+    
+    // Subscribe to real-time message updates
+    const messageSubscription = subscribeToMessages(session.user.id, () => {
+      fetchChats(); // Refetch chats when messages change
+    });
+    
+    return () => {
+      messageSubscription.unsubscribe();
+    };
   }, []);
 
   const fetchChats = async () => {
@@ -82,6 +93,10 @@ export default function ChatListScreen({
             setUserProfiles(profiles);
           }
         }
+
+        // Fetch unread counts
+        const unreadCountsData = await getUnreadPerChat(session.user.id);
+        setUnreadCounts(unreadCountsData);
       }
     } catch (error) {
       console.error('Error fetching chats:', error);
@@ -250,6 +265,11 @@ export default function ChatListScreen({
                         <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
                           {getLastMessage(chat)}
                         </p>
+                        {unreadCounts[chat.id] > 0 && (
+                          <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                            {unreadCounts[chat.id]}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </button>

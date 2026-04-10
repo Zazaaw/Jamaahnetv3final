@@ -3,12 +3,14 @@ import { motion } from "motion/react";
 import { Bell, Cloud, Star, MapPin, User } from "lucide-react";
 import { IslamicPattern, MosqueIcon } from "./IslamicPattern";
 import { getSupabaseClient } from "../utils/supabase/client";
+import NotificationDropdown from "./NotificationDropdown";
 
 interface DynamicIslamicHeaderProps {
   notifications: any[];
   showNotifications: boolean;
   onToggleNotifications: () => void;
   session?: any;
+  onNavigate?: (screen: string) => void;
 }
 
 interface PrayerTime {
@@ -170,6 +172,7 @@ export default function DynamicIslamicHeader({
   showNotifications,
   onToggleNotifications,
   session,
+  onNavigate,
 }: DynamicIslamicHeaderProps) {
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -426,18 +429,8 @@ export default function DynamicIslamicHeader({
             </div>
           </div>
 
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={onToggleNotifications}
-            className={`${theme.glassBg} backdrop-blur-md rounded-full w-12 h-12 flex items-center justify-center relative border ${theme.glassBorder} shadow-sm`}
-          >
-            <Bell className={`w-5 h-5 ${theme.textClass}`} />
-            {notifications && notifications.length > 0 && (
-              <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white border border-white">
-                {notifications.length}
-              </span>
-            )}
-          </motion.button>
+          {/* Notification Dropdown - Replaces old Bell button */}
+          {session && <NotificationDropdown session={session} onNavigate={onNavigate} />}
         </div>
 
         <motion.div
