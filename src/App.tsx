@@ -73,11 +73,22 @@ function AppContent() {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      
+      // Security interruption: Check user status if logged in
+      if (session?.user?.id) {
+        checkUserStatus(session.user.id);
+      }
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
+      
+      // Security interruption: Check user status whenever session changes
+      if (session?.user?.id) {
+        await checkUserStatus(session.user.id);
+      }
+      // If session is null (user logged out), do nothing - allow public access
     });
 
     // Show splash screen for 3.5 seconds (longer to showcase motion graphics)
@@ -90,6 +101,29 @@ function AppContent() {
       clearTimeout(timer);
     };
   }, []);
+
+  // Security function: Check user status from profiles table
+  const checkUserStatus = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('status')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user status:', error);
+        return;
+      }
+
+      // Force pending users to the approval screen
+      if (profile?.status === 'Pending') {
+        setCurrentScreen('pending-approval');
+      }
+    } catch (error) {
+      console.error('Error in checkUserStatus:', error);
+    }
+  };
 
   const handleToggleDarkMode = () => {
     setDarkMode(prev => {
