@@ -5,7 +5,7 @@ import {
   ArrowLeft, Users, ShoppingBag, TrendingUp, AlertCircle, CheckCircle, 
   Clock, Shield, Edit, Trash2, Plus, Search, Filter, MoreVertical, 
   Eye, UserCheck, Calendar, DollarSign, Flag, AlertTriangle, 
-  BadgeCheck, ChevronRight, List, BookOpen, X, ShieldAlert, MessageSquare, Activity
+  BadgeCheck, ChevronRight, List, BookOpen, X, ShieldAlert, MessageSquare, Activity, MapPin
 } from 'lucide-react';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { toast } from 'sonner';
@@ -186,6 +186,58 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
     } catch (error) { toast.error('Gagal menolak postingan'); }
   };
 
+  // 2. EVENT APPROVAL HANDLERS
+  const handleApproveEvent = async (id: string) => {
+    try {
+      const { error } = await supabase.from('events').update({ status: 'approved' }).eq('id', id);
+      if (error) throw error;
+      toast.success('Event approved! ✅');
+      fetchEvents();
+    } catch (error) {
+      console.error('Error approving event:', error);
+      toast.error('Failed to approve event');
+    }
+  };
+
+  const handleRejectEvent = async (id: string) => {
+    if (!confirm('Reject this event? This will set status to rejected.')) return;
+    try {
+      const { error } = await supabase.from('events').update({ status: 'rejected' }).eq('id', id);
+      if (error) throw error;
+      toast.success('Event rejected');
+      fetchEvents();
+    } catch (error) {
+      console.error('Error rejecting event:', error);
+      toast.error('Failed to reject event');
+    }
+  };
+
+  // 3. CAMPAIGN APPROVAL HANDLERS
+  const handleApproveCampaign = async (id: string) => {
+    try {
+      const { error } = await supabase.from('donation_campaigns').update({ status: 'active' }).eq('id', id);
+      if (error) throw error;
+      toast.success('Campaign activated! 🎉');
+      fetchCampaigns();
+    } catch (error) {
+      console.error('Error approving campaign:', error);
+      toast.error('Failed to approve campaign');
+    }
+  };
+
+  const handleRejectCampaign = async (id: string) => {
+    if (!confirm('Reject this campaign? This will set status to rejected.')) return;
+    try {
+      const { error } = await supabase.from('donation_campaigns').update({ status: 'rejected' }).eq('id', id);
+      if (error) throw error;
+      toast.success('Campaign rejected');
+      fetchCampaigns();
+    } catch (error) {
+      console.error('Error rejecting campaign:', error);
+      toast.error('Failed to reject campaign');
+    }
+  };
+
   const handleTakeDownTimeline = async (id: string) => {
     const reason = window.prompt('Masukkan alasan Take Down postingan ini:');
     if (reason === null) return;
@@ -307,6 +359,7 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
       if (table === 'events') fetchEvents();
       if (table === 'products') fetchProducts();
       if (table === 'articles') fetchArticles();
+      if (table === 'donation_campaigns') fetchCampaigns();
     } catch (error) { toast.error('Failed to delete'); }
   };
 
@@ -562,27 +615,103 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                <button onClick={() => setShowCreateCampaign(true)} className="w-full mb-6 bg-gray-900 text-white py-4 rounded-[2rem] text-sm font-bold flex items-center justify-center gap-2 shadow-lg"><Plus className="w-5 h-5"/> New Campaign</button>
                <CreateCampaignModal session={session} isOpen={showCreateCampaign} onClose={() => setShowCreateCampaign(false)} onSuccess={fetchAllData} />
                <div className="space-y-4">
-                 {campaigns.map((camp) => (
-                   <div key={camp.id} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 shadow-sm">
-                     <h4 className="font-bold text-base text-gray-900 dark:text-white mb-2 truncate">{camp.title}</h4>
-                     <div className="flex justify-between text-xs text-gray-500 mb-3 font-medium">
-                       <span><strong className="text-emerald-600 text-sm">{formatPrice(camp.collected)}</strong> raised</span>
-                       <span>{formatPrice(camp.target)} goal</span>
+                 {campaigns.map((camp) => {
+                   // Determine if campaign needs approval (Draft or Pending status)
+                   const needsApproval = camp.status === 'Draft' || camp.status === 'Pending' || camp.status === 'pending';
+                   const isActiveOrPending = camp.status === 'Active' || camp.status === 'Pending' || camp.status === 'pending';
+                   
+                   return (
+                     <div key={camp.id} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 shadow-sm">
+                       <div className="flex justify-between items-start mb-2">
+                         <h4 className="font-bold text-base text-gray-900 dark:text-white truncate pr-2">{camp.title}</h4>
+                         <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase shrink-0 ${camp.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : camp.status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>{camp.status}</span>
+                       </div>
+                       <div className="flex justify-between text-xs text-gray-500 mb-3 font-medium">
+                         <span><strong className="text-emerald-600 text-sm">{formatPrice(camp.collected)}</strong> raised</span>
+                         <span>{formatPrice(camp.target)} goal</span>
+                       </div>
+                       <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-5">
+                         <div className="h-full bg-emerald-500 rounded-full" style={{width: `${Math.min((camp.collected/camp.target)*100, 100)}%`}}></div>
+                       </div>
+                       <div className="flex gap-2">
+                         {/* 2. UI: Show Approve button if campaign is Draft or Pending */}
+                         {needsApproval && (
+                           <button onClick={() => handleApproveCampaign(camp.id)} className="flex-1 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-colors">Approve</button>
+                         )}
+                         {/* 2. UI: Show Reject button if campaign is Active or Pending */}
+                         {isActiveOrPending && (
+                           <button onClick={() => handleRejectCampaign(camp.id)} className="flex-1 py-2.5 bg-orange-50 text-orange-600 rounded-xl text-xs font-bold hover:bg-orange-100 transition-colors">Reject</button>
+                         )}
+                         {/* 2. UI: Delete button - always visible */}
+                         <button onClick={() => handleDeleteItem(camp.id, 'donation_campaigns')} className="flex-1 py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">Delete</button>
+                       </div>
                      </div>
-                     <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-5">
-                       <div className="h-full bg-emerald-500 rounded-full" style={{width: `${Math.min((camp.collected/camp.target)*100, 100)}%`}}></div>
-                     </div>
-                     <div className="flex gap-2">
-                       <button className="flex-1 py-2.5 bg-gray-50 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-100 transition-colors">Edit</button>
-                     </div>
-                   </div>
-                 ))}
+                   );
+                 })}
                </div>
             </motion.div>
           )}
 
-          {/* EVENTS, ARTICLES, REPORTS (Placeholders for SaaS style) */}
-          {(activeTab === 'events' || activeTab === 'articles' || activeTab === 'reports') && (
+          {/* 8. EVENTS TAB */}
+          {activeTab === 'events' && (
+            <motion.div key="events" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="space-y-4">
+                {events.length === 0 ? (
+                  <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 shadow-sm">
+                    <div className="w-20 h-20 bg-gray-50 rounded-[2rem] flex items-center justify-center mx-auto mb-5">
+                      <Calendar className="w-8 h-8 text-gray-400"/>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">No Events Yet</h3>
+                    <p className="text-gray-500 text-sm px-8">Events created by users will appear here for approval.</p>
+                  </div>
+                ) : (
+                  events.map((event) => {
+                    const eventDate = new Date(event.date);
+                    const needsApproval = event.status !== 'approved';
+                    
+                    return (
+                      <div key={event.id} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 shadow-sm">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <h4 className="font-bold text-base text-gray-900 dark:text-white mb-1">{event.title}</h4>
+                            <p className="text-xs text-gray-500 mb-2">
+                              {event.category} • {eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase shrink-0 ${event.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : event.status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
+                            {event.status || 'Pending'}
+                          </span>
+                        </div>
+                        
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{event.description}</p>
+                        
+                        <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            <span>{event.location}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 pt-3 border-t border-gray-50 dark:border-gray-800">
+                          {/* 3. UI: Show Approve/Reject buttons if event is not approved */}
+                          {needsApproval && event.status !== 'rejected' && (
+                            <>
+                              <button onClick={() => handleApproveEvent(event.id)} className="flex-1 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors">Approve</button>
+                              <button onClick={() => handleRejectEvent(event.id)} className="flex-1 py-2 text-xs font-bold text-orange-700 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">Reject</button>
+                            </>
+                          )}
+                          <button onClick={() => handleDeleteItem(event.id, 'events')} className="flex-1 py-2 text-xs font-bold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">Delete</button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ARTICLES, REPORTS (Placeholders for SaaS style) */}
+          {(activeTab === 'articles' || activeTab === 'reports') && (
             <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-16 bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 shadow-sm">
                <div className="w-20 h-20 bg-gray-50 rounded-[2rem] flex items-center justify-center mx-auto mb-5">
                  {activeTab === 'reports' ? <Flag className="w-8 h-8 text-gray-400"/> : <List className="w-8 h-8 text-gray-400"/>}

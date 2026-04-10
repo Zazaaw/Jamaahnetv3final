@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Users, Check, Calendar as CalendarIcon, Clock, Sparkles } from 'lucide-react';
-import { motion } from 'motion/react';
+import { MapPin, Users, Check, Calendar as CalendarIcon, Clock, Sparkles, Plus, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { projectId } from '../utils/supabase/info';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { IslamicPattern } from './IslamicPattern';
+import { toast } from 'sonner';
 
 interface Event {
   id: string;
@@ -31,18 +32,49 @@ const CATEGORY_ICONS = {
 export default function CalendarScreen({ session }: { session: any }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  
+  // Form fields
+  const [formTitle, setFormTitle] = useState('');
+  const [formCategory, setFormCategory] = useState('Shalat');
+  const [formDateTime, setFormDateTime] = useState('');
+  const [formLocation, setFormLocation] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  
   const categories = ['Semua', 'Shalat', 'Kajian', 'Acara Komunitas'];
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+    if (session?.user?.id) {
+      fetchUserRole();
+    }
+  }, [session]);
+
+  const fetchUserRole = async () => {
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (error) throw error;
+      if (data) setCurrentUserRole(data.role);
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+    }
+  };
 
   const fetchEvents = async () => {
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('events')
-        .select('*');
+        .select('*')
+        .eq('status', 'approved'); // 1. PUBLIC FILTER: Only show approved events
       
       if (error) throw error;
       if (data) setEvents(data);
@@ -84,10 +116,78 @@ export default function CalendarScreen({ session }: { session: any }) {
         
         // Refresh events
         fetchEvents();
+        toast.success('RSVP berhasil');
+      } else {
+        toast.info('Anda sudah RSVP');
       }
     } catch (error) {
       console.error('Error RSVPing to event:', error);
       alert('Gagal RSVP');
+    }
+  };
+
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!session) {
+      toast.error('Silakan login terlebih dahulu');
+      return;
+    }
+
+    if (!formTitle || !formCategory || !formDateTime || !formLocation || !formDescription) {
+      toast.error('Semua field harus diisi');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const supabase = getSupabaseClient();
+      
+      // 3. STATUS LOGIC: Determine status based on user role
+      const status = currentUserRole === 'Admin' ? 'approved' : 'pending';
+      
+      // Convert datetime-local to ISO string for PostgreSQL
+      const eventDate = new Date(formDateTime);
+      
+      const { error } = await supabase
+        .from('events')
+        .insert({
+          title: formTitle,
+          category: formCategory,
+          date: eventDate.toISOString(), // Convert to ISO string for PostgreSQL
+          location: formLocation,
+          description: formDescription,
+          status: status,
+          rsvp: [],
+          created_by: session.user.id,
+          // Note: created_at is omitted if the database has DEFAULT NOW() setting
+          // If you need to set it manually, use: created_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      // Show appropriate success message
+      if (status === 'approved') {
+        toast.success('Kegiatan berhasil dibuat! ✅');
+      } else {
+        toast.success('Pengajuan kegiatan berhasil dikirim! Menunggu persetujuan admin. ⏳');
+      }
+
+      // 4. REFRESH DATA: Reset form and refresh events
+      setFormTitle('');
+      setFormCategory('Shalat');
+      setFormDateTime('');
+      setFormLocation('');
+      setFormDescription('');
+      setShowCreateModal(false);
+      fetchEvents();
+      
+    } catch (error: any) {
+      console.error('Error creating event:', error);
+      toast.error('Gagal membuat kegiatan: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -260,6 +360,150 @@ export default function CalendarScreen({ session }: { session: any }) {
         {/* Bottom Spacing */}
         <div className="h-20" />
       </div>
+
+      {/* 1. FLOATING ACTION BUTTON (FAB) - Only visible when logged in */}
+      {session && (
+        <motion.button
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.5, type: 'spring', stiffness: 260, damping: 20 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setShowCreateModal(true)}
+          className="fixed bottom-24 right-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-full shadow-2xl hover:shadow-blue-500/50 transition-all z-50"
+        >
+          <Plus className="w-6 h-6" />
+        </motion.button>
+      )}
+
+      {/* 2. CREATE EVENT MODAL */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCreateModal(false)}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                {/* Modal Header */}
+                <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-3xl flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">Buat Kegiatan Baru</h2>
+                    <p className="text-blue-100 text-sm">Tambahkan kegiatan untuk jamaah</p>
+                  </div>
+                  <button
+                    onClick={() => setShowCreateModal(false)}
+                    className="bg-white/20 backdrop-blur-md p-2 rounded-xl hover:bg-white/30 transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleCreateEvent} className="p-6 space-y-5">
+                  {/* Title */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Judul Kegiatan *
+                    </label>
+                    <input
+                      type="text"
+                      value={formTitle}
+                      onChange={(e) => setFormTitle(e.target.value)}
+                      placeholder="Contoh: Kajian Subuh Hari Jumat"
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                      required
+                    />
+                  </div>
+
+                  {/* Category */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Kategori *
+                    </label>
+                    <select
+                      value={formCategory}
+                      onChange={(e) => setFormCategory(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                      required
+                    >
+                      <option value="Shalat">🕌 Shalat</option>
+                      <option value="Kajian">📖 Kajian</option>
+                      <option value="Acara Komunitas">🤝 Acara Komunitas</option>
+                    </select>
+                  </div>
+
+                  {/* Date & Time */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Tanggal & Waktu *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formDateTime}
+                      onChange={(e) => setFormDateTime(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                      required
+                    />
+                  </div>
+
+                  {/* Location */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Lokasi *
+                    </label>
+                    <input
+                      type="text"
+                      value={formLocation}
+                      onChange={(e) => setFormLocation(e.target.value)}
+                      placeholder="Contoh: Masjid Al-Ikhlas"
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                      required
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Deskripsi *
+                    </label>
+                    <textarea
+                      value={formDescription}
+                      onChange={(e) => setFormDescription(e.target.value)}
+                      placeholder="Jelaskan detail kegiatan..."
+                      rows={4}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white resize-none"
+                      required
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Mengirim...' : 'Buat Kegiatan'}
+                  </motion.button>
+                </form>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

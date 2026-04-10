@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Target, TrendingUp, FileText, HeartHandshake, Sparkles, ChevronRight } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Target, TrendingUp, FileText, HeartHandshake, Sparkles, ChevronRight, Plus, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { getSupabaseClient } from '../utils/supabase/client';
 import DonationModal from './DonationModal';
 import { IslamicPattern } from './IslamicPattern';
+import { toast } from 'sonner';
 
 interface Campaign {
   id: string;
@@ -20,12 +21,39 @@ export default function DonationScreen({ session }: { session: any }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [showDonationModal, setShowDonationModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  
+  // Form fields
+  const [formTitle, setFormTitle] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formTargetAmount, setFormTargetAmount] = useState('');
+  const [formImageUrl, setFormImageUrl] = useState('');
   
   const supabase = getSupabaseClient();
 
   useEffect(() => {
     fetchCampaigns();
-  }, []);
+    if (session?.user?.id) {
+      fetchUserRole();
+    }
+  }, [session]);
+
+  const fetchUserRole = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (error) throw error;
+      if (data) setCurrentUserRole(data.role);
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+    }
+  };
 
   const fetchCampaigns = async () => {
     try {
@@ -67,6 +95,70 @@ export default function DonationScreen({ session }: { session: any }) {
   const handleDonate = (campaign: Campaign) => {
     setSelectedCampaign(campaign);
     setShowDonationModal(true);
+  };
+
+  const handleCreateCampaign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!session) {
+      toast.error('Silakan login terlebih dahulu');
+      return;
+    }
+
+    if (!formTitle || !formDescription || !formTargetAmount) {
+      toast.error('Semua field wajib diisi (kecuali gambar)');
+      return;
+    }
+
+    const targetAmount = parseFloat(formTargetAmount);
+    if (isNaN(targetAmount) || targetAmount <= 0) {
+      toast.error('Target amount harus berupa angka positif');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // 3. ROLE-BASED STATUS LOGIC: Determine status based on user role
+      const status = currentUserRole === 'Admin' ? 'active' : 'pending';
+      
+      const { error } = await supabase
+        .from('donation_campaigns')
+        .insert({
+          title: formTitle,
+          description: formDescription,
+          target_amount: targetAmount,
+          current_amount: 0,
+          image_url: formImageUrl || 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+          status: status,
+          created_by: session.user.id,
+          // Note: created_at is omitted if the database has DEFAULT NOW() setting
+          // If you need to set it manually, use: created_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      // Show appropriate success message
+      if (status === 'active') {
+        toast.success('Kampanye donasi berhasil dibuat! ✅');
+      } else {
+        toast.success('Pengajuan donasi berhasil dikirim! Mohon tunggu verifikasi Admin. ⏳');
+      }
+
+      // 4. UI REFRESH: Reset form and refresh campaigns
+      setFormTitle('');
+      setFormDescription('');
+      setFormTargetAmount('');
+      setFormImageUrl('');
+      setShowCreateModal(false);
+      fetchCampaigns();
+      
+    } catch (error: any) {
+      console.error('Error creating campaign:', error);
+      toast.error('Gagal membuat kampanye: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -262,6 +354,147 @@ export default function DonationScreen({ session }: { session: any }) {
           }}
         />
       )}
+
+      {/* 1. FLOATING ACTION BUTTON (FAB) - Only visible when logged in */}
+      {session && (
+        <motion.button
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.6, type: 'spring', stiffness: 260, damping: 20 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setShowCreateModal(true)}
+          className="fixed bottom-24 right-6 bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-4 rounded-full shadow-2xl hover:shadow-emerald-500/50 transition-all z-50"
+        >
+          <Plus className="w-6 h-6" />
+        </motion.button>
+      )}
+
+      {/* 2. CREATE CAMPAIGN MODAL */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCreateModal(false)}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                {/* Modal Header */}
+                <div className="sticky top-0 bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-6 rounded-t-3xl flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">Ajukan Kampanye Donasi</h2>
+                    <p className="text-emerald-100 text-sm">Bantu sesama dengan kampanye Anda</p>
+                  </div>
+                  <button
+                    onClick={() => setShowCreateModal(false)}
+                    className="bg-white/20 backdrop-blur-md p-2 rounded-xl hover:bg-white/30 transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleCreateCampaign} className="p-6 space-y-5">
+                  {/* Title */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Judul Kampanye *
+                    </label>
+                    <input
+                      type="text"
+                      value={formTitle}
+                      onChange={(e) => setFormTitle(e.target.value)}
+                      placeholder="Contoh: Bantu Renovasi Masjid Al-Ikhlas"
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white"
+                      required
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Deskripsi *
+                    </label>
+                    <textarea
+                      value={formDescription}
+                      onChange={(e) => setFormDescription(e.target.value)}
+                      placeholder="Jelaskan tujuan dan kebutuhan kampanye donasi Anda..."
+                      rows={5}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white resize-none"
+                      required
+                    />
+                  </div>
+
+                  {/* Target Amount */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Target Donasi (IDR) *
+                    </label>
+                    <input
+                      type="number"
+                      value={formTargetAmount}
+                      onChange={(e) => setFormTargetAmount(e.target.value)}
+                      placeholder="Contoh: 50000000"
+                      min="1"
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {formTargetAmount && !isNaN(parseFloat(formTargetAmount)) && `≈ ${formatPrice(parseFloat(formTargetAmount))}`}
+                    </p>
+                  </div>
+
+                  {/* Image URL (Optional) */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      URL Gambar (opsional)
+                    </label>
+                    <input
+                      type="url"
+                      value={formImageUrl}
+                      onChange={(e) => setFormImageUrl(e.target.value)}
+                      placeholder="https://example.com/image.jpg"
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Jika kosong, akan menggunakan gambar default
+                    </p>
+                  </div>
+
+                  {/* Submit Button */}
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      'Mengirim...'
+                    ) : (
+                      <>
+                        <HeartHandshake className="w-5 h-5" />
+                        Ajukan Kampanye
+                      </>
+                    )}
+                  </motion.button>
+                </form>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
