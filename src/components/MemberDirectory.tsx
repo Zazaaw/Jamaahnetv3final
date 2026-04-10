@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, Search, ArrowLeft } from 'lucide-react';
+import { Users, Search, ArrowLeft, Mail, Phone, MapPin } from 'lucide-react';
 import { motion } from 'motion/react';
 import { getSupabaseClient } from '../utils/supabase/client';
 
@@ -7,14 +7,34 @@ export default function MemberDirectory({ onNavigate }: { onNavigate?: (screen: 
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentUser, setCurrentUser] = useState<{ id: string; role: string } | null>(null);
 
   useEffect(() => {
-    const fetchMembers = async () => {
+    const fetchCurrentUserAndMembers = async () => {
       try {
         const supabase = getSupabaseClient();
+        
+        // 1. Fetch current logged-in user's id and role
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user?.id) {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, role')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profileError) {
+            console.error('Error fetching current user profile:', profileError);
+          } else {
+            setCurrentUser(profile);
+          }
+        }
+
+        // 2. Fetch members list with email, phone, and address
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, name, role, avatar_url')
+          .select('id, name, role, avatar_url, email, phone, address')
           .order('name', { ascending: true });
 
         if (error) throw error;
@@ -26,7 +46,7 @@ export default function MemberDirectory({ onNavigate }: { onNavigate?: (screen: 
       }
     };
 
-    fetchMembers();
+    fetchCurrentUserAndMembers();
   }, []);
 
   const filteredMembers = members.filter(member => 
@@ -69,30 +89,61 @@ export default function MemberDirectory({ onNavigate }: { onNavigate?: (screen: 
             animate={{ opacity: 1 }} 
             className="grid grid-cols-1 gap-3"
           >
-            {filteredMembers.map((member, index) => (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                key={member.id} 
-                onClick={() => onNavigate?.('other-profile', { userId: member.id })}
-                className="flex items-center gap-4 p-4 bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 rounded-2xl hover:border-emerald-200 dark:hover:border-emerald-800 transition-all cursor-pointer shadow-sm group"
-              >
-                {member.avatar_url ? (
-                  <img src={member.avatar_url} alt={member.name} className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-gray-700" />
-                ) : (
-                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-inner">
-                    {member.name ? member.name.charAt(0).toUpperCase() : '?'}
+            {filteredMembers.map((member, index) => {
+              // 3. PRIVACY LOGIC (STRICT): Check if current user can see sensitive data
+              const canViewSensitiveData = 
+                currentUser?.role === 'Admin' || // Admin can see all
+                currentUser?.id === member.id;   // Users can see their own data
+              
+              return (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  key={member.id} 
+                  onClick={() => onNavigate?.('other-profile', { userId: member.id })}
+                  className="flex items-center gap-4 p-4 bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 rounded-2xl hover:border-emerald-200 dark:hover:border-emerald-800 transition-all cursor-pointer shadow-sm group"
+                >
+                  {member.avatar_url ? (
+                    <img src={member.avatar_url} alt={member.name} className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-gray-700" />
+                  ) : (
+                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-inner">
+                      {member.name ? member.name.charAt(0).toUpperCase() : '?'}
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h4 className="font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                      {member.name || 'Jamaah Tanpa Nama'}
+                    </h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{member.role || 'Member'}</p>
+                    
+                    {/* 4. CONDITIONAL DISPLAY: Only show sensitive data if access is granted */}
+                    {canViewSensitiveData && (
+                      <div className="mt-2 space-y-1">
+                        {member.email && (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                            <Mail className="w-3 h-3" />
+                            <span>{member.email}</span>
+                          </div>
+                        )}
+                        {member.phone && (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                            <Phone className="w-3 h-3" />
+                            <span>{member.phone}</span>
+                          </div>
+                        )}
+                        {member.address && (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                            <MapPin className="w-3 h-3" />
+                            <span className="line-clamp-1">{member.address}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                )}
-                <div className="flex-1">
-                  <h4 className="font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                    {member.name || 'Jamaah Tanpa Nama'}
-                  </h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{member.role || 'Member'}</p>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
             {filteredMembers.length === 0 && (
               <div className="text-center py-10 text-gray-500 dark:text-gray-400">
                 Jamaah tidak ditemukan.
