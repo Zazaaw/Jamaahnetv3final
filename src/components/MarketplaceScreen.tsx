@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ArrowLeftRight, Filter, Search, Sparkles, Tag, X } from 'lucide-react';
+import { Plus, ArrowLeft, ArrowLeftRight, Filter, Search, Sparkles, Tag, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { getSupabaseClient } from '../utils/supabase/client';
@@ -41,10 +41,12 @@ const CATEGORIES = {
 
 export default function MarketplaceScreen({ 
   session,
-  onNavigate 
+  onNavigate,
+  onBack
 }: { 
   session: any;
   onNavigate: (screen: string, data?: any) => void;
+  onBack?: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<'c2c' | 'b2c'>('c2c');
   const [products, setProducts] = useState<Product[]>([]);
@@ -129,6 +131,17 @@ export default function MarketplaceScreen({
         <IslamicPattern className="text-white opacity-10" />
         
         <div className="relative z-10 p-6 pb-8">
+          {/* Back Button */}
+          {onBack && (
+            <motion.button
+              onClick={onBack}
+              className="mb-4 p-2.5 rounded-2xl bg-white/20 backdrop-blur-md hover:bg-white/30 transition-all flex items-center justify-center"
+              whileTap={{ scale: 0.9 }}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </motion.button>
+          )}
+          
           {/* Title */}
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -149,7 +162,7 @@ export default function MarketplaceScreen({
             </motion.button>
           </div>
 
-          {/* Tabs - Segmented Control */}
+          {/* Tabs - Segmented Control with Updated Labels */}
           <div className="bg-black/20 backdrop-blur-md p-1.5 rounded-2xl flex gap-1">
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -160,7 +173,7 @@ export default function MarketplaceScreen({
                   : 'text-white/80'
               }`}
             >
-              🤝 Pasar Jamaah
+              🤝 Produk dan Jasa
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -171,7 +184,7 @@ export default function MarketplaceScreen({
                   : 'text-white/80'
               }`}
             >
-              🕌 Toko Masjid
+              🕌 Katalog
             </motion.button>
           </div>
         </div>

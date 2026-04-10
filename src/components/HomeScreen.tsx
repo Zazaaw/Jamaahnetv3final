@@ -679,11 +679,15 @@ function TwitterStylePost({
 
           {/* Image */}
           {post.image && (
+            (typeof post.image === 'string' && post.image.trim() !== "") || 
+            (Array.isArray(post.image) && post.image.length > 0)
+          ) && (
             <div className="mb-3 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
               <img
-                src={post.image}
+                src={Array.isArray(post.image) ? post.image[0] : post.image}
                 alt={post.title}
                 className="w-full max-h-96 object-cover"
+                onError={(e) => (e.currentTarget.style.display = 'none')}
               />
             </div>
           )}

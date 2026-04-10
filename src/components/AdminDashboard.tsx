@@ -556,7 +556,10 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-5 whitespace-pre-wrap leading-relaxed">{post.content}</p>
                     {post.image && (
-                      <img src={post.image} alt="Post image" className="w-full max-h-64 object-cover rounded-xl mb-4 border border-gray-100 dark:border-gray-800 shadow-sm" />
+                      (typeof post.image === 'string' && post.image.trim() !== "") || 
+                      (Array.isArray(post.image) && post.image.length > 0)
+                    ) && (
+                      <img src={Array.isArray(post.image) ? post.image[0] : post.image} alt="Post image" className="w-full max-h-64 object-cover rounded-xl mb-4 border border-gray-100 dark:border-gray-800 shadow-sm" onError={(e) => (e.currentTarget.style.display = 'none')} />
                     )}
                     <div className="flex gap-2 pt-3 border-t border-gray-50 dark:border-gray-800">
                       {/* If pending, show Approve & Reject */}

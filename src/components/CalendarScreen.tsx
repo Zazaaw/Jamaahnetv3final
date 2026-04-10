@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Users, Check, Calendar as CalendarIcon, Clock, Sparkles, Plus, X } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Plus, X, Sparkles, Loader2, ArrowLeft, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { projectId } from '../utils/supabase/info';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { IslamicPattern } from './IslamicPattern';
 import { toast } from 'sonner';
@@ -29,7 +29,7 @@ const CATEGORY_ICONS = {
   'Acara Komunitas': '🤝',
 };
 
-export default function CalendarScreen({ session }: { session: any }) {
+export default function CalendarScreen({ session, onBack }: { session: any; onBack?: () => void }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -213,9 +213,20 @@ export default function CalendarScreen({ session }: { session: any }) {
         <IslamicPattern className="text-white opacity-10" />
         
         <div className="relative z-10 p-6 pb-8">
+          {/* Back Button */}
+          {onBack && (
+            <motion.button
+              onClick={onBack}
+              whileTap={{ scale: 0.9 }}
+              className="mb-4 bg-white/20 backdrop-blur-md p-2 rounded-xl"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </motion.button>
+          )}
+          
           <div className="flex items-center gap-3 mb-6">
             <div className="bg-white/20 backdrop-blur-md p-3 rounded-2xl">
-              <CalendarIcon className="w-6 h-6" />
+              <Calendar className="w-6 h-6" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Kegiatan Jamaah</h1>
@@ -252,7 +263,7 @@ export default function CalendarScreen({ session }: { session: any }) {
             className="text-center py-20"
           >
             <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-3xl flex items-center justify-center mx-auto mb-4">
-              <CalendarIcon className="w-10 h-10 text-gray-400" />
+              <Calendar className="w-10 h-10 text-gray-400" />
             </div>
             <p className="text-gray-500 dark:text-gray-400 font-medium">
               Tidak ada kegiatan untuk kategori ini

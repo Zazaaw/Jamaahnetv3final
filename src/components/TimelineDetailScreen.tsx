@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Heart, MessageCircle, Send, Edit2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Share2, Bookmark, MoreVertical, Edit2, Trash2, ChevronLeft, ChevronRight, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { getSupabaseClient } from '../utils/supabase/client';
@@ -18,7 +18,7 @@ interface TimelinePost {
   user_name: string;
   title: string;
   content: string;
-  image?: string;
+  image?: string | string[];
   created_at: number;
   likes?: string[];
   comments?: Comment[];
@@ -47,7 +47,18 @@ export default function TimelineDetailScreen({
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isLiked, setIsLiked] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const supabase = getSupabaseClient();
+
+  // Parse images from post - support both single image string and array
+  const images = React.useMemo(() => {
+    if (!post.image) return [];
+    if (Array.isArray(post.image)) return post.image;
+    if (typeof post.image === 'string') return [post.image];
+    return [];
+  }, [post.image]);
+
+  const hasMultipleImages = images.length > 1;
 
   useEffect(() => {
     loadPostData();
@@ -292,14 +303,57 @@ export default function TimelineDetailScreen({
             {post.title}
           </h2>
 
-          {/* Post Image */}
-          {post.image && (
-            <div className="mb-4 rounded-2xl overflow-hidden">
+          {/* Post Image Gallery */}
+          {images.length > 0 && (
+            <div className="mb-4 relative rounded-2xl overflow-hidden">
               <img
-                src={post.image}
-                alt={post.title}
+                src={images[currentImageIndex]}
+                alt={`${post.title} - Image ${currentImageIndex + 1}`}
                 className="w-full h-64 object-cover"
               />
+              
+              {/* Image Navigation Buttons */}
+              {hasMultipleImages && (
+                <>
+                  {/* Left Arrow */}
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 backdrop-blur-md p-2 rounded-full text-white hover:bg-black/70 transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </motion.button>
+                  
+                  {/* Right Arrow */}
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setCurrentImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 backdrop-blur-md p-2 rounded-full text-white hover:bg-black/70 transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </motion.button>
+                  
+                  {/* Dots Indicator */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    {images.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          index === currentImageIndex 
+                            ? 'bg-white w-6' 
+                            : 'bg-white/50'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  
+                  {/* Counter Badge */}
+                  <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full text-white text-sm font-semibold">
+                    {currentImageIndex + 1} / {images.length}
+                  </div>
+                </>
+              )}
             </div>
           )}
 

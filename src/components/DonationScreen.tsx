@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Target, TrendingUp, FileText, HeartHandshake, Sparkles, ChevronRight, Plus, X } from 'lucide-react';
+import { Heart, TrendingUp, Users, Calendar, Plus, X, Loader2, ArrowLeft, HeartHandshake, Sparkles, FileText, ChevronRight, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getSupabaseClient } from '../utils/supabase/client';
 import DonationModal from './DonationModal';
 import { IslamicPattern } from './IslamicPattern';
+import { ImageWithFallback } from './figma/ImageWithFallback';
 import { toast } from 'sonner';
 
 interface Campaign {
@@ -17,7 +18,7 @@ interface Campaign {
   created_at: number;
 }
 
-export default function DonationScreen({ session }: { session: any }) {
+export default function DonationScreen({ session, onBack }: { session: any; onBack?: () => void }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [showDonationModal, setShowDonationModal] = useState(false);
@@ -179,6 +180,17 @@ export default function DonationScreen({ session }: { session: any }) {
         <IslamicPattern className="text-white opacity-10" />
         
         <div className="relative z-10 p-6 pb-8">
+          {/* Back Button */}
+          {onBack && (
+            <motion.button
+              onClick={onBack}
+              whileTap={{ scale: 0.9 }}
+              className="mb-4 bg-white/20 backdrop-blur-md p-2 rounded-xl"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </motion.button>
+          )}
+          
           <div className="flex items-center gap-3 mb-6">
             <motion.div
               initial={{ scale: 0 }}

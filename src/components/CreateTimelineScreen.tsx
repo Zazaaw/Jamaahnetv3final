@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Image as ImageIcon, X } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { ArrowLeft, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import { getSupabaseClient } from '../utils/supabase/client';
@@ -17,40 +17,71 @@ export default function CreateTimelineScreen({
 }) {
   const [title, setTitle] = useState(editPost?.title || '');
   const [content, setContent] = useState(editPost?.content || '');
-  const [image, setImage] = useState(editPost?.image || '');
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>(editPost?.image || '');
+  const [imageUrls, setImageUrls] = useState<string[]>(editPost?.images || editPost?.image ? [editPost.image] : []);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>(editPost?.images || editPost?.image ? [editPost.image] : []);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
   const supabase = getSupabaseClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isEditMode = !!editPost;
 
-  // Handle file selection with 5MB validation
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Handle multiple file selection with 5MB validation
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    // Check file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-    if (file.size > maxSize) {
-      toast.error('Ukuran gambar maksimal 5MB!');
-      e.target.value = ''; // Clear the input
+    // Check total images limit
+    if (imagePreviews.length + files.length > 5) {
+      toast.error('Maksimal 5 foto per postingan');
+      e.target.value = '';
       return;
     }
 
-    // Set file and create preview
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    const newFiles: File[] = [];
+    const newPreviews: string[] = [];
+
+    for (const file of files) {
+      // Check file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (file.size > maxSize) {
+        toast.error(`${file.name}: Ukuran maksimal 5MB!`);
+        continue;
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(`${file.name}: Format harus JPG, PNG, atau WebP`);
+        continue;
+      }
+
+      newFiles.push(file);
+      
+      // Create preview
+      const previewUrl = URL.createObjectURL(file);
+      newPreviews.push(previewUrl);
+    }
+
+    setImageFiles(prev => [...prev, ...newFiles]);
+    setImagePreviews(prev => [...prev, ...newPreviews]);
+    
+    if (newFiles.length > 0) {
+      toast.success(`${newFiles.length} foto ditambahkan`);
+    }
+    
+    // Clear input
+    e.target.value = '';
   };
 
   // Clear selected image
-  const handleClearImage = () => {
-    setImageFile(null);
-    setImagePreview('');
-    setImage('');
+  const handleRemoveImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setImageUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,26 +101,30 @@ export default function CreateTimelineScreen({
     setError('');
 
     try {
-      let imageUrl = image; // Use existing image URL if available
+      let imageUrl: string[] = imageUrls; // Use existing image URLs if available
 
       // If there's a new file selected, upload it first
-      if (imageFile) {
-        const fileName = `${Date.now()}-${imageFile.name}`;
-        
-        const { data, error: uploadError } = await supabase
-          .storage
-          .from('timeline-images')
-          .upload(fileName, imageFile);
+      if (imageFiles.length > 0) {
+        const uploadPromises = imageFiles.map(async (file) => {
+          const fileName = `${Date.now()}-${file.name}`;
+          
+          const { data, error: uploadError } = await supabase
+            .storage
+            .from('timeline-images')
+            .upload(fileName, file);
 
-        if (uploadError) throw uploadError;
+          if (uploadError) throw uploadError;
 
-        // Get public URL
-        const { data: urlData } = supabase
-          .storage
-          .from('timeline-images')
-          .getPublicUrl(fileName);
+          // Get public URL
+          const { data: urlData } = supabase
+            .storage
+            .from('timeline-images')
+            .getPublicUrl(fileName);
 
-        imageUrl = urlData.publicUrl;
+          return urlData.publicUrl;
+        });
+
+        imageUrl = await Promise.all(uploadPromises);
       }
 
       if (isEditMode) {
@@ -207,28 +242,36 @@ export default function CreateTimelineScreen({
               onChange={handleFileSelect}
               className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white"
               disabled={loading || uploading}
+              multiple
+              ref={fileInputRef}
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Maksimal ukuran file: 5MB
             </p>
-            {imagePreview && (
+            {imagePreviews.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="mt-3 relative"
               >
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="w-full h-48 object-cover rounded-2xl"
-                />
-                <button
-                  type="button"
-                  onClick={handleClearImage}
-                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="grid grid-cols-2 gap-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={preview}
+                        alt="Preview"
+                        className="w-full h-48 object-cover rounded-2xl"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </motion.div>
             )}
           </div>

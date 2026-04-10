@@ -477,14 +477,15 @@ function AppContent() {
       <div className="flex-1 overflow-auto pb-20">
         {currentScreen === 'home' && <HomeScreen session={session} onNavigate={handleNavigation} key={homeRefreshKey} />}
         {currentScreen === 'explore' && <ExploreScreen session={session} onNavigate={handleNavigation} />}
-        {currentScreen === 'calendar' && <CalendarScreen session={session} />}
+        {currentScreen === 'calendar' && <CalendarScreen session={session} onBack={() => setCurrentScreen('home')} />}
         {currentScreen === 'marketplace' && (
           <MarketplaceScreen 
             session={session}
             onNavigate={handleNavigation}
+            onBack={() => setCurrentScreen('home')}
           />
         )}
-        {currentScreen === 'donation' && <DonationScreen session={session} />}
+        {currentScreen === 'donation' && <DonationScreen session={session} onBack={() => setCurrentScreen('home')} />}
         {currentScreen === 'profile' && (
           <ProfileScreen 
             session={session}
@@ -496,69 +497,71 @@ function AppContent() {
         )}
       </div>
 
-      {/* Liquid Glass Tab Bar - iOS 26 Style */}
-      <div className="fixed bottom-0 left-0 right-0 pointer-events-none px-4 pb-6 safe-area-bottom z-50">
-        <motion.div 
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 260, damping: 20 }}
-          className="max-w-md mx-auto pointer-events-auto"
-        >
-          <div className="relative backdrop-blur-2xl bg-white/70 dark:bg-gray-900/70 rounded-[2rem] shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-white/20 dark:border-white/10 overflow-hidden">
-            {/* Gradient overlay for depth */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent dark:from-white/5 pointer-events-none" />
-            
-            {/* Tab buttons container */}
-            <div className="relative flex justify-around items-center px-2 py-3">
-              <TabButton
-                icon={Home}
-                active={currentScreen === 'home'}
-                onClick={() => setCurrentScreen('home')}
-              />
-              <TabButton
-                icon={Search}
-                active={currentScreen === 'explore'}
-                onClick={() => setCurrentScreen('explore')}
-              />
-              <TabButton
-                icon={Plus}
-                active={currentScreen === 'create-timeline'}
-                onClick={() => {
-                  if (session) {
-                    setCurrentScreen('create-timeline');
-                  } else {
-                    setCurrentScreen('auth');
-                  }
-                }}
-                isCenter={true}
-              />
-              <TabButton
-                icon={MessageSquare}
-                active={currentScreen === 'chat-list'}
-                onClick={() => {
-                  if (session) {
-                    setCurrentScreen('chat-list');
-                  } else {
-                    setCurrentScreen('auth');
-                  }
-                }}
-                badge={unreadMessageCount}
-              />
-              <TabButton
-                icon={User}
-                active={currentScreen === 'profile'}
-                onClick={() => {
-                  if (session) {
-                    setCurrentScreen('profile');
-                  } else {
-                    setCurrentScreen('auth');
-                  }
-                }}
-              />
+      {/* Liquid Glass Tab Bar - iOS 26 Style - HIDDEN on calendar, marketplace, donation screens */}
+      {!['calendar', 'marketplace', 'donation'].includes(currentScreen) && (
+        <div className="fixed bottom-0 left-0 right-0 pointer-events-none px-4 pb-6 safe-area-bottom z-50">
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            className="max-w-md mx-auto pointer-events-auto"
+          >
+            <div className="relative backdrop-blur-2xl bg-white/70 dark:bg-gray-900/70 rounded-[2rem] shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-white/20 dark:border-white/10 overflow-hidden">
+              {/* Gradient overlay for depth */}
+              <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent dark:from-white/5 pointer-events-none" />
+              
+              {/* Tab buttons container */}
+              <div className="relative flex justify-around items-center px-2 py-3">
+                <TabButton
+                  icon={Home}
+                  active={currentScreen === 'home'}
+                  onClick={() => setCurrentScreen('home')}
+                />
+                <TabButton
+                  icon={Search}
+                  active={currentScreen === 'explore'}
+                  onClick={() => setCurrentScreen('explore')}
+                />
+                <TabButton
+                  icon={Plus}
+                  active={currentScreen === 'create-timeline'}
+                  onClick={() => {
+                    if (session) {
+                      setCurrentScreen('create-timeline');
+                    } else {
+                      setCurrentScreen('auth');
+                    }
+                  }}
+                  isCenter={true}
+                />
+                <TabButton
+                  icon={MessageSquare}
+                  active={currentScreen === 'chat-list'}
+                  onClick={() => {
+                    if (session) {
+                      setCurrentScreen('chat-list');
+                    } else {
+                      setCurrentScreen('auth');
+                    }
+                  }}
+                  badge={unreadMessageCount}
+                />
+                <TabButton
+                  icon={User}
+                  active={currentScreen === 'profile'}
+                  onClick={() => {
+                    if (session) {
+                      setCurrentScreen('profile');
+                    } else {
+                      setCurrentScreen('auth');
+                    }
+                  }}
+                />
+              </div>
             </div>
-          </div>
-        </motion.div>
-      </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

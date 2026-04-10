@@ -17,9 +17,8 @@ export default function PostProductModal({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [uploadedImageUrl, setUploadedImageUrl] = useState('');
-  const [imagePreview, setImagePreview] = useState('');
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isBarterAllowed, setIsBarterAllowed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -28,62 +27,75 @@ export default function PostProductModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('Format file harus JPG, PNG, atau WebP');
+    // Check total images limit
+    if (imagePreviews.length + files.length > 5) {
+      toast.error('Maksimal 5 foto per produk');
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5242880) {
-      toast.error('Ukuran file maksimal 5MB');
-      return;
-    }
-
-    // Show preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-
-    // Upload to server
     setUploading(true);
-    try {
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      const filePath = `${session.user.id}/${fileName}`;
+    const newImageUrls: string[] = [];
+    const newPreviews: string[] = [];
 
-      const { error: uploadError } = await supabase.storage
-        .from('product_images')
-        .upload(filePath, file);
+    for (const file of files) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(`${file.name}: Format harus JPG, PNG, atau WebP`);
+        continue;
+      }
 
-      if (uploadError) throw uploadError;
+      // Validate file size (max 5MB)
+      if (file.size > 5242880) {
+        toast.error(`${file.name}: Ukuran maksimal 5MB`);
+        continue;
+      }
 
-      const { data } = supabase.storage
-        .from('product_images')
-        .getPublicUrl(filePath);
+      try {
+        // Create preview
+        const previewUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+        newPreviews.push(previewUrl);
 
-      setUploadedImageUrl(data.publicUrl);
-      toast.success('Gambar berhasil diupload!');
-    } catch (error: any) {
-      console.error('Error uploading image:', error);
-      toast.error(error.message || 'Gagal mengupload gambar');
-      setImagePreview('');
-    } finally {
-      setUploading(false);
+        // Upload to server
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        const filePath = `${session.user.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('product_images')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage
+          .from('product_images')
+          .getPublicUrl(filePath);
+
+        newImageUrls.push(data.publicUrl);
+      } catch (error: any) {
+        console.error('Error uploading image:', error);
+        toast.error(`Gagal upload ${file.name}`);
+      }
+    }
+
+    setImageUrls(prev => [...prev, ...newImageUrls]);
+    setImagePreviews(prev => [...prev, ...newPreviews]);
+    setUploading(false);
+    
+    if (newImageUrls.length > 0) {
+      toast.success(`${newImageUrls.length} foto berhasil diupload!`);
     }
   };
 
-  const handleRemoveImage = () => {
-    setImagePreview('');
-    setUploadedImageUrl('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+  const handleRemoveImage = (index: number) => {
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setImageUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,14 +104,14 @@ export default function PostProductModal({
 
     try {
       // Use uploaded image first, then manual URL, then default
-      const finalImageUrl = uploadedImageUrl || imageUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e';
+      const finalImageUrls = imageUrls.length > 0 ? imageUrls : ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e'];
 
       const { error } = await supabase.from('products').insert({
         user_id: session.user.id,
         name,
         description,
         price: parseInt(price),
-        images: [finalImageUrl],
+        images: finalImageUrls,
         // Note: Check if image_url column exists in your schema, usually images array is enough
         // but adding it as requested by prompt just in case or mapping it to images
         is_barter_allowed: isBarterAllowed,
@@ -179,11 +191,11 @@ export default function PostProductModal({
           {/* Image Upload Section */}
           <div>
             <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
-              Foto Produk
+              Foto Produk {imagePreviews.length > 0 && `(${imagePreviews.length}/5)`}
             </label>
             
             {/* Upload Button */}
-            {!imagePreview && (
+            {imagePreviews.length === 0 && (
               <div className="space-y-3">
                 <button
                   type="button"
@@ -204,7 +216,7 @@ export default function PostProductModal({
                           Upload Foto Produk
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          JPG, PNG, atau WebP (Max 5MB)
+                          JPG, PNG, atau WebP (Max 5MB, hingga 5 foto)
                         </p>
                       </>
                     )}
@@ -216,51 +228,71 @@ export default function PostProductModal({
                   accept="image/jpeg,image/jpg,image/png,image/webp"
                   onChange={handleImageUpload}
                   className="hidden"
+                  multiple
                 />
               </div>
             )}
 
-            {/* Image Preview */}
-            {imagePreview && (
-              <div className="relative">
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="w-full h-48 object-cover rounded-lg"
-                />
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-                {uploading && (
-                  <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 text-white animate-spin" />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Manual URL Input (Alternative) */}
-            {!imagePreview && (
-              <div className="mt-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">ATAU</span>
-                  <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
+            {/* Image Preview Grid */}
+            {imagePreviews.length > 0 && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-48 object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      {index === 0 && (
+                        <div className="absolute bottom-2 left-2 bg-emerald-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                          Foto Utama
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
+                
+                {/* Add More Photos Button */}
+                {imagePreviews.length < 5 && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full border-2 border-dashed border-emerald-500 dark:border-emerald-400 rounded-lg p-4 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      {uploading ? (
+                        <>
+                          <Loader2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 animate-spin" />
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Mengupload...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                            Tambah Foto
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </button>
+                )}
                 <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
-                  placeholder="Tempel URL gambar dari internet"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  multiple
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Kosongkan jika ingin menggunakan gambar default
-                </p>
               </div>
             )}
           </div>
