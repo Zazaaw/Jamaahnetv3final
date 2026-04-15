@@ -377,7 +377,7 @@ export default function PublicProfileScreen({
                 : 'text-gray-400 dark:text-gray-500 border-b-2 border-transparent'
             }`}
           >
-            Pasar
+            Bisnis
           </button>
           <button
             onClick={() => setActiveTab('media')}

@@ -229,7 +229,7 @@ export default function CalendarScreen({ session, onBack }: { session: any; onBa
               <Calendar className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Kegiatan Jamaah</h1>
+              <h1 className="text-2xl font-bold">Sosial Jamaah</h1>
               <p className="text-blue-100 text-sm">Jangan lewatkan momen berharga</p>
             </div>
           </div>

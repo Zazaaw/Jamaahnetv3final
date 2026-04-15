@@ -147,7 +147,7 @@ export default function MarketplaceScreen({
             <div>
               <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
                 <Tag className="w-6 h-6" />
-                Pasar Halal
+                Bisnis Halal
               </h1>
               <p className="text-orange-100 text-sm">Jual beli dengan berkah</p>
             </div>
@@ -184,7 +184,7 @@ export default function MarketplaceScreen({
                   : 'text-white/80'
               }`}
             >
-              🕌 Katalog
+              🕌 Katalog Bisnis
             </motion.button>
           </div>
         </div>

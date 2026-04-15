@@ -131,7 +131,7 @@ export default function HomeScreen({
       // Kita ambil data 24 jam terakhir
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-      // 1. Cek Produk Baru di Pasar
+      // 1. Cek Produk Baru di Bisnis
       const { count: productCount } = await supabase
         .from('products')
         .select('*', { count: 'exact', head: true })
@@ -141,7 +141,7 @@ export default function HomeScreen({
         notifs.push({
           type: 'product',
           count: productCount,
-          message: `${productCount} produk baru di Pasar Jamaah`
+          message: `${productCount} produk baru di Bisnis Jamaah`
         });
       }
 
@@ -339,20 +339,20 @@ export default function HomeScreen({
         >
           {/* TOP ROW: 3 Core Features (Gojek Style: Round Icon + Text) */}
           <div className="flex justify-around items-start">
-            {/* Kegiatan */}
+            {/* Sosial */}
             <button onClick={() => onNavigate?.('calendar')} className="flex flex-col items-center gap-2 group">
               <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all shadow-sm">
                 <Calendar className="w-5 h-5" />
               </div>
-              <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Kegiatan</span>
+              <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Sosial</span>
             </button>
             
-            {/* Pasar */}
+            {/* Bisnis */}
             <button onClick={() => onNavigate?.('marketplace')} className="flex flex-col items-center gap-2 group">
               <div className="w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-all shadow-sm">
                 <Store className="w-5 h-5" />
               </div>
-              <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Pasar</span>
+              <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Bisnis</span>
             </button>
             
             {/* Donasi */}
@@ -470,6 +470,7 @@ function TwitterStylePost({
   const [isLiked, setIsLiked] = useState(false);
   const [comments, setComments] = useState<any[]>(post.comments || []);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     // Update state when post changes
@@ -677,20 +678,71 @@ function TwitterStylePost({
             </p>
           </div>
 
-          {/* Image */}
+          {/* Image/Multi-Photo Carousel */}
           {post.image && (
             (typeof post.image === 'string' && post.image.trim() !== "") || 
             (Array.isArray(post.image) && post.image.length > 0)
-          ) && (
-            <div className="mb-3 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
-              <img
-                src={Array.isArray(post.image) ? post.image[0] : post.image}
-                alt={post.title}
-                className="w-full max-h-96 object-cover"
-                onError={(e) => (e.currentTarget.style.display = 'none')}
-              />
-            </div>
-          )}
+          ) && (() => {
+            const images = Array.isArray(post.image) ? post.image : [post.image];
+            const hasMultipleImages = images.length > 1;
+            
+            return (
+              <div className="mb-3 relative">
+                <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                  <motion.div
+                    className="flex"
+                    animate={{ x: `-${currentImageIndex * 100}%` }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  >
+                    {images.map((imgSrc, idx) => (
+                      <div key={idx} className="min-w-full">
+                        <img
+                          src={imgSrc}
+                          alt={`${post.title} - ${idx + 1}`}
+                          className="w-full max-h-96 object-cover"
+                          onError={(e) => (e.currentTarget.style.display = 'none')}
+                        />
+                      </div>
+                    ))}
+                  </motion.div>
+                </div>
+                
+                {/* Pagination Dots & Counter */}
+                {hasMultipleImages && (
+                  <>
+                    {/* Counter Badge */}
+                    <div 
+                      className="absolute top-3 right-3 px-3 py-1.5 bg-black/60 backdrop-blur-sm rounded-full text-white text-xs font-semibold"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {currentImageIndex + 1}/{images.length}
+                    </div>
+                    
+                    {/* Navigation Dots */}
+                    <div 
+                      className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {images.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentImageIndex(idx);
+                          }}
+                          className={`rounded-full transition-all ${
+                            idx === currentImageIndex
+                              ? 'bg-white w-6 h-2'
+                              : 'bg-white/50 w-2 h-2'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Actions - Twitter Style */}
           <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/50">

@@ -425,7 +425,7 @@ export default function ProfileScreen({
                 : 'text-gray-400 dark:text-gray-500 border-b-2 border-transparent'
             }`}
           >
-            Pasar
+            Bisnis
           </button>
           <button
             onClick={() => setActiveTab('media')}
@@ -496,7 +496,7 @@ export default function ProfileScreen({
                   Belum ada produk yang dijual
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Mulai berjualan di Pasar Jamaah!
+                  Mulai berjualan di Bisnis Jamaah!
                 </p>
               </motion.div>
             ) : (
