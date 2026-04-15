@@ -7,6 +7,7 @@ import { IslamicPattern, MosqueIcon } from './IslamicPattern';
 import DynamicIslamicHeader from './DynamicIslamicHeader';
 import NotificationBell from './NotificationBell';
 import { toast } from 'sonner@2.0.3';
+import { BlurFade } from './magicui/blur-fade';
 
 interface Announcement {
   id: string;
@@ -273,12 +274,13 @@ export default function HomeScreen({
       <div className="relative z-10 p-6 space-y-6">
         {/* Announcement Carousel - Modern Card Style */}
         {announcements.length > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4 }}
-            className="relative"
-          >
+          <BlurFade delay={0.5} duration={0.5}>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+              className="relative"
+            >
             <div className="overflow-hidden rounded-3xl shadow-2xl">
               <div
                 className="flex transition-transform duration-700 ease-out"
@@ -328,9 +330,11 @@ export default function HomeScreen({
               ))}
             </div>
           </motion.div>
+          </BlurFade>
         )}
 
         {/* Quick Access Menu - Minimalist Modern Style */}
+        <BlurFade delay={0.3} duration={0.5}>
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -383,8 +387,10 @@ export default function HomeScreen({
             </button>
           </div>
         </motion.div>
+        </BlurFade>
 
         {/* Timeline Kegiatan Jamaah - Twitter Style Thread */}
+        <BlurFade delay={0.3} duration={0.5}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -431,18 +437,20 @@ export default function HomeScreen({
           ) : (
             <div className="space-y-3">
               {timeline.map((post, index) => (
-                <TwitterStylePost
-                  key={post.id}
-                  post={post}
-                  session={session}
-                  onNavigate={onNavigate}
-                  onRefresh={fetchTimeline}
-                  delay={0.8 + index * 0.05}
-                />
+                <BlurFade key={post.id} delay={0.5 + index * 0.08} duration={0.4}>
+                  <TwitterStylePost
+                    post={post}
+                    session={session}
+                    onNavigate={onNavigate}
+                    onRefresh={fetchTimeline}
+                    delay={0.8 + index * 0.05}
+                  />
+                </BlurFade>
               ))}
             </div>
           )}
         </motion.div>
+        </BlurFade>
 
         {/* Bottom Spacing for Tab Bar */}
         <div className="h-20" />
@@ -600,10 +608,8 @@ function TwitterStylePost({
   };
 
   return (
+    <BlurFade delay={0.3} duration={1.0}>
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
       onClick={() => onNavigate?.('timeline-detail', post)}
       className="bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700/50 p-5 hover:shadow-xl dark:hover:bg-gray-800/70 transition-all cursor-pointer group overflow-hidden"
     >
@@ -823,6 +829,7 @@ function TwitterStylePost({
 
       </div>
     </motion.div>
+    </BlurFade>
   );
 }
 

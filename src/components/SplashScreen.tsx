@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import Lottie from 'lottie-react';
+import { BlurFade } from './magicui/blur-fade';
 
 export default function SplashScreen() {
   const [animationData, setAnimationData] = useState<any>(null);
@@ -17,6 +18,7 @@ export default function SplashScreen() {
     <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col items-center justify-center overflow-hidden">
       
       {/* Container Animasi Lottie */}
+      <BlurFade delay={0.3} duration={0.8}>
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -34,8 +36,10 @@ export default function SplashScreen() {
           <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
         )}
       </motion.div>
+      </BlurFade>
 
       {/* Teks Brand - Clean & Tajam */}
+      <BlurFade delay={0.3} duration={1.0}>
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -49,6 +53,7 @@ export default function SplashScreen() {
           Social & Business Network
         </p>
       </motion.div>
+      </BlurFade>
 
       {/* Loading Dots Opsional */}
       <motion.div

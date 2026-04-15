@@ -6,6 +6,7 @@ import { getSupabaseClient } from '../utils/supabase/client';
 import PostProductModal from './PostProductModal';
 import { IslamicPattern } from './IslamicPattern';
 import { StarRating } from './StarRating';
+import { BlurFade } from './magicui/blur-fade';
 
 interface Product {
   id: string;
@@ -292,16 +293,16 @@ export default function MarketplaceScreen({
             className="grid grid-cols-2 gap-4"
           >
             {filteredProducts.map((product, index) => (
-              <motion.button
-                key={product.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                whileHover={{ y: -4 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onNavigate('product-detail', product)}
-                className="group bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700/50 overflow-hidden text-left card-hover"
-              >
+              <BlurFade key={product.id} delay={0.2 + index * 0.08} duration={0.4}>
+                <motion.button
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onNavigate('product-detail', product)}
+                  className="group bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700/50 overflow-hidden text-left card-hover"
+                >
                 {/* Product Image */}
                 <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 relative overflow-hidden">
                   <ImageWithFallback
@@ -363,6 +364,7 @@ export default function MarketplaceScreen({
                   </div>
                 </div>
               </motion.button>
+              </BlurFade>
             ))}
           </motion.div>
         ) : (

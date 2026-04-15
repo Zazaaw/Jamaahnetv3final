@@ -5,6 +5,7 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { IslamicPattern } from './IslamicPattern';
 import { toast } from 'sonner';
+import { BlurFade } from './magicui/blur-fade';
 
 interface Event {
   id: string;
@@ -276,13 +277,13 @@ export default function CalendarScreen({ session, onBack }: { session: any; onBa
             const categoryGradient = CATEGORY_COLORS[event.category as keyof typeof CATEGORY_COLORS] || 'from-gray-500 to-gray-600';
 
             return (
-              <motion.div
-                key={event.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="card-hover bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700/50 overflow-hidden"
-              >
+              <BlurFade key={event.id} delay={0.2 + index * 0.08} duration={0.4}>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="card-hover bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700/50 overflow-hidden"
+                >
                 <div className="flex gap-0">
                   {/* Date Badge - Vertical */}
                   <div className={`bg-gradient-to-br ${categoryGradient} text-white p-5 flex flex-col items-center justify-center min-w-[100px]`}>
@@ -364,6 +365,7 @@ export default function CalendarScreen({ session, onBack }: { session: any; onBa
                   </div>
                 </div>
               </motion.div>
+              </BlurFade>
             );
           })
         )}

@@ -705,21 +705,18 @@ function TabButton({
         />
       </motion.div>
 
-      {/* Badge for unread messages */}
       {badge > 0 && (
         <motion.div
-          className="absolute top-0 right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-lg min-w-[18px] text-center"
+          // Tambahkan 'flex items-center justify-center' dan 'aspect-square'
+          className="absolute top-0 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full shadow-lg min-w-[18px] h-[18px] flex items-center justify-center px-1 border-2 border-white dark:border-gray-900"
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0, opacity: 0 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
         >
-          <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-          >
+          <div className="leading-none">
             {badge > 99 ? '99+' : badge}
-          </motion.div>
+          </div>
         </motion.div>
       )}
     </motion.button>

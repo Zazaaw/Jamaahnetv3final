@@ -5,6 +5,7 @@ import { getSupabaseClient } from '../utils/supabase/client';
 import { projectId } from '../utils/supabase/info';
 import { IslamicPattern, MosqueIcon } from './IslamicPattern';
 import { toast } from 'sonner@2.0.3';
+import { BlurFade } from './magicui/blur-fade';
 
 interface Profile {
   id: string;
@@ -202,7 +203,12 @@ export default function PublicProfileScreen({
   // Stats calculation
   const totalPosts = userPosts.length;
   const totalLikes = userPosts.reduce((sum, post) => sum + (post.likes?.length || 0), 0);
-  const mediaPosts = userPosts.filter(post => post.image);
+  const mediaPosts = userPosts.filter(post => {
+    if (Array.isArray(post.image)) {
+      return post.image.length > 0;
+    }
+    return !!post.image;
+  });
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
@@ -225,6 +231,7 @@ export default function PublicProfileScreen({
 
       {/* Profile Section - Threads Style */}
       <div className="relative z-10 px-6 pt-6">
+        <BlurFade delay={0.1} duration={0.5}>
         {/* Header: Name/Username on Left, Avatar on Right */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -390,6 +397,7 @@ export default function PublicProfileScreen({
             Media
           </button>
         </motion.div>
+        </BlurFade>
       </div>
 
       {/* Feed Sections */}
@@ -417,14 +425,15 @@ export default function PublicProfileScreen({
             ) : (
               <div className="space-y-3 mt-3">
                 {userPosts.map((post, index) => (
-                  <TwitterStylePost
-                    key={post.id}
-                    post={post}
-                    session={session}
-                    onNavigate={onNavigate}
-                    onRefresh={fetchUserPosts}
-                    delay={0.4 + index * 0.05}
-                  />
+                  <BlurFade key={post.id} delay={0.2 + index * 0.08} duration={0.4}>
+                    <TwitterStylePost
+                      post={post}
+                      session={session}
+                      onNavigate={onNavigate}
+                      onRefresh={fetchUserPosts}
+                      delay={0.4 + index * 0.05}
+                    />
+                  </BlurFade>
                 ))}
               </div>
             )}
@@ -454,14 +463,14 @@ export default function PublicProfileScreen({
             ) : (
               <div className="grid grid-cols-2 gap-3 mt-3">
                 {userProducts.map((product, index) => (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.4 + index * 0.05 }}
-                    onClick={() => onNavigate('product-detail', product)}
-                    className="cursor-pointer group relative overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-md"
-                  >
+                  <BlurFade key={product.id} delay={0.2 + index * 0.08} duration={0.4}>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.4 + index * 0.05 }}
+                      onClick={() => onNavigate('product-detail', product)}
+                      className="cursor-pointer group relative overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-md"
+                    >
                     {/* Product Image */}
                     <div className="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700 relative">
                       {product.images && product.images.length > 0 ? (
@@ -504,6 +513,7 @@ export default function PublicProfileScreen({
                       </p>
                     </div>
                   </motion.div>
+                  </BlurFade>
                 ))}
               </div>
             )}
@@ -532,33 +542,47 @@ export default function PublicProfileScreen({
               </motion.div>
             ) : (
               <div className="grid grid-cols-3 gap-1 mt-1">
-                {mediaPosts.map((post, index) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.4 + index * 0.05 }}
-                    onClick={() => onNavigate('timeline-detail', post)}
-                    className="aspect-square cursor-pointer group relative overflow-hidden bg-gray-100 dark:bg-gray-800"
-                  >
-                    <img
-                      src={post.image}
-                      alt={post.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                      <div className="flex items-center gap-1 text-white">
-                        <Heart className="w-5 h-5" fill="white" />
-                        <span className="font-semibold">{post.likes?.length || 0}</span>
+                {mediaPosts.map((post, index) => {
+                  const imageUrl = Array.isArray(post.image) ? post.image[0] : post.image;
+                  const hasMultipleImages = Array.isArray(post.image) && post.image.length > 1;
+                  
+                  return (
+                    <BlurFade key={post.id} delay={0.2 + index * 0.05} duration={0.3}>
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.4 + index * 0.05 }}
+                        onClick={() => onNavigate('timeline-detail', post)}
+                        className="aspect-square cursor-pointer group relative overflow-hidden bg-gray-100 dark:bg-gray-800"
+                      >
+                      <img
+                        src={imageUrl}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                      
+                      {/* Multi-photo indicator */}
+                      {hasMultipleImages && (
+                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-full p-1.5">
+                          <Repeat2 className="w-3.5 h-3.5 text-white" />
+                        </div>
+                      )}
+                      
+                      {/* Hover overlay */}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                        <div className="flex items-center gap-1 text-white">
+                          <Heart className="w-5 h-5" fill="white" />
+                          <span className="font-semibold">{post.likes?.length || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-white">
+                          <MessageCircle className="w-5 h-5" fill="white" />
+                          <span className="font-semibold">{post.comments?.length || 0}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 text-white">
-                        <MessageCircle className="w-5 h-5" fill="white" />
-                        <span className="font-semibold">{post.comments?.length || 0}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                    </BlurFade>
+                  );
+                })}
               </div>
             )}
           </>
