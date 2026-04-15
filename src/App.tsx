@@ -227,66 +227,61 @@ function AppContent() {
     }
   };
 
-  // Push Notification Setup
+  // Push Notification Setup - VERSI SAFARI GUARD
   useEffect(() => {
-    const currentSession = session;
-    if (currentSession?.user?.id) {
-      // Request notification permission
-      Notification.requestPermission().then((permission) => {
-        if (permission === 'granted') {
-          console.log('Notification permission granted.');
-          
-          // Get FCM token
-          getToken(messaging, { 
-            vapidKey: 'BM5stiqe-qFQjHlUAX0B8Gw84NQlU9RHSVjLL2CupbU-gZXdYwmoL62qJXnxKEzvfsYavra9BJOYk-cmAQa3DFs' 
-          })
-            .then((currentToken) => {
-              if (currentToken) {
-                console.log('FCM Token:', currentToken);
-                // Save token to database
-                savePushToken(currentSession.user.id, currentToken);
-              } else {
-                console.log('No registration token available. Request permission to generate one.');
-              }
-            })
-            .catch((err) => {
-              console.log('An error occurred while retrieving token. ', err);
+    // 1. Cek dulu apakah session ada DAN browser dukung Notification
+    if (session?.user?.id && 'Notification' in window) {
+      const setupPush = async () => {
+        try {
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            console.log('Notification permission granted.');
+            
+            const currentToken = await getToken(messaging, { 
+              vapidKey: 'BM5stiqe-qFQjHlUAX0B8Gw84NQlU9RHSVjLL2CupbU-gZXdYwmoL62qJXnxKEzvfsYavra9BJOYk-cmAQa3DFs' 
             });
-        } else {
-          console.log('Unable to get permission to notify.');
-        }
-      });
-    }
-  }, [session]);
 
-  // Foreground message handler
-  useEffect(() => {
-    const currentSession = session;
-    if (currentSession?.user?.id) {
-      const unsubscribe = onMessage(messaging, (payload) => {
-        console.log('Foreground message received:', payload);
-        
-        // Show toast notification
-        toast.info(
-          payload.notification?.title || 'Notifikasi Baru',
-          {
-            description: payload.notification?.body || 'Anda menerima pesan baru'
+            if (currentToken) {
+              console.log('FCM Token:', currentToken);
+              savePushToken(session.user.id, currentToken);
+            }
           }
-        );
-        
-        // Update unread message count
-        const updateCount = async () => {
-          const count = await getUnreadMessageCount(currentSession.user.id);
-          setUnreadCount(count);
-          setUnreadMessageCount(count);
-          setHasUnreadMessages(count > 0);
-        };
-        updateCount();
-      });
-      
-      return () => unsubscribe();
+        } catch (err) {
+          // Kalau error di Safari, jangan bikin Blank Screen, cukup log saja
+          console.warn('Safari/Browser blocked notification request:', err);
+        }
+      };
+
+      setupPush();
     }
-  }, [session]);
+  }, [session?.user?.id]); // Gunakan ID spesifik agar lebih stabil
+
+  // Foreground message handler - VERSI AMAN
+  useEffect(() => {
+    if (session?.user?.id && 'Notification' in window) {
+      try {
+        const unsubscribe = onMessage(messaging, (payload) => {
+          console.log('Foreground message received:', payload);
+          toast.info(
+            payload.notification?.title || 'Notifikasi Baru',
+            { description: payload.notification?.body || 'Anda menerima pesan baru' }
+          );
+          
+          const updateCount = async () => {
+            const count = await getUnreadMessageCount(session.user.id);
+            setUnreadCount(count);
+            setUnreadMessageCount(count);
+            setHasUnreadMessages(count > 0);
+          };
+          updateCount();
+        });
+        
+        return () => unsubscribe();
+      } catch (e) {
+        console.warn("Messaging foreground not supported in this browser environment");
+      }
+    }
+  }, [session?.user?.id]);
 
   if (currentScreen === 'splash') {
     return (
