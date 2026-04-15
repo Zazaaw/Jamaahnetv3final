@@ -45,6 +45,26 @@ export async function getUnreadMessageCount(userId: string): Promise<number> {
 }
 
 /**
+ * Simpan token notifikasi ke database profiles
+ */
+export async function savePushToken(userId: string, token: string) {
+  try {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase
+      .from('profiles')
+      .update({ push_token: token })
+      .eq('id', userId);
+
+    if (error) throw error;
+    console.log('Push token saved successfully');
+    return true;
+  } catch (error) {
+    console.error('Error saving push token:', error);
+    return false;
+  }
+}
+
+/**
  * Get unread messages count per chat
  */
 export async function getUnreadPerChat(userId: string): Promise<Record<string, number>> {

@@ -4,7 +4,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Toaster } from 'sonner@2.0.3';
 import { getSupabaseClient } from './utils/supabase/client';
 import { LanguageProvider } from './utils/LanguageContext';
-import { getUnreadMessageCount, subscribeToMessages } from './utils/notificationService';
+import { getUnreadMessageCount, subscribeToMessages, savePushToken } from './utils/notificationService';
+import { messaging } from './utils/firebase';
+import { getToken, onMessage } from 'firebase/messaging';
+import { toast } from 'sonner';
 
 // Screen Imports
 import SplashScreen from './components/SplashScreen';
@@ -31,7 +34,6 @@ import PublicProfileScreen from './components/PublicProfileScreen';
 import MemberDirectory from './components/MemberDirectory';
 import AppFooter from './components/AppFooter';
 import InitData from './components/InitData';
-import { toast } from 'sonner';
 
 const supabase = getSupabaseClient();
 
@@ -224,6 +226,67 @@ function AppContent() {
       toast.error('Gagal memulai percakapan');
     }
   };
+
+  // Push Notification Setup
+  useEffect(() => {
+    const currentSession = session;
+    if (currentSession?.user?.id) {
+      // Request notification permission
+      Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+          console.log('Notification permission granted.');
+          
+          // Get FCM token
+          getToken(messaging, { 
+            vapidKey: 'BM5stiqe-qFQjHlUAX0B8Gw84NQlU9RHSVjLL2CupbU-gZXdYwmoL62qJXnxKEzvfsYavra9BJOYk-cmAQa3DFs' 
+          })
+            .then((currentToken) => {
+              if (currentToken) {
+                console.log('FCM Token:', currentToken);
+                // Save token to database
+                savePushToken(currentSession.user.id, currentToken);
+              } else {
+                console.log('No registration token available. Request permission to generate one.');
+              }
+            })
+            .catch((err) => {
+              console.log('An error occurred while retrieving token. ', err);
+            });
+        } else {
+          console.log('Unable to get permission to notify.');
+        }
+      });
+    }
+  }, [session]);
+
+  // Foreground message handler
+  useEffect(() => {
+    const currentSession = session;
+    if (currentSession?.user?.id) {
+      const unsubscribe = onMessage(messaging, (payload) => {
+        console.log('Foreground message received:', payload);
+        
+        // Show toast notification
+        toast.info(
+          payload.notification?.title || 'Notifikasi Baru',
+          {
+            description: payload.notification?.body || 'Anda menerima pesan baru'
+          }
+        );
+        
+        // Update unread message count
+        const updateCount = async () => {
+          const count = await getUnreadMessageCount(currentSession.user.id);
+          setUnreadCount(count);
+          setUnreadMessageCount(count);
+          setHasUnreadMessages(count > 0);
+        };
+        updateCount();
+      });
+      
+      return () => unsubscribe();
+    }
+  }, [session]);
 
   if (currentScreen === 'splash') {
     return (

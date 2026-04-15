@@ -17,28 +17,26 @@ export default function NotificationDropdown({ session, onNavigate }: Notificati
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (session?.user?.id) {
-      fetchUserRole();
-      fetchNotifications();
-      
-      // Subscribe to real-time notifications
-      const subscriptions = subscribeToNotifications(
-        session.user.id,
-        fetchNotifications
-      );
+  if (session?.user?.id) {
+    fetchUserRole();
+    fetchNotifications();
+    
+    // Ambil hasil subscribe
+    const subs = subscribeToNotifications(
+      session.user.id,
+      fetchNotifications
+    );
 
-      return () => {
-        subscriptions.forEach(sub => sub.unsubscribe());
-      };
-    }
-  }, [session?.user?.id]);
-
-  // Refetch when userRole changes
-  useEffect(() => {
-    if (session?.user?.id && userRole) {
-      fetchNotifications();
-    }
-  }, [userRole]);
+    return () => {
+      // PENGAMAN: Cek dulu apakah dia array atau bukan sebelum forEach
+      if (Array.isArray(subs)) {
+        subs.forEach(sub => sub?.unsubscribe?.());
+      } else if (subs && typeof subs.unsubscribe === 'function') {
+        subs.unsubscribe();
+      }
+    };
+  }
+}, [session?.user?.id]);
 
   const fetchUserRole = async () => {
     try {
