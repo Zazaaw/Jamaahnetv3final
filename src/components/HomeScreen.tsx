@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, DollarSign, Store, Bell, MessageCircle, ShoppingBag, Heart, Users, Plus, Bookmark, Repeat2, Share2, MoreVertical, Info, Headset } from 'lucide-react';
+import { Calendar, DollarSign, Store, Bell, MessageCircle, ShoppingBag, Heart, Users, Plus, Bookmark, Repeat2, Share2, MoreVertical, Info, Headset, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getSupabaseClient } from '../utils/supabase/client';
@@ -8,6 +8,7 @@ import DynamicIslamicHeader from './DynamicIslamicHeader';
 import NotificationBell from './NotificationBell';
 import { toast } from 'sonner@2.0.3';
 import { BlurFade } from './magicui/blur-fade';
+import { searchTimelinePosts, debounce } from '../utils/searchUtils';
 
 interface Announcement {
   id: string;
@@ -54,6 +55,8 @@ export default function HomeScreen({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [timeline, setTimeline] = useState<TimelinePost[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredTimeline, setFilteredTimeline] = useState<TimelinePost[]>([]);
 
   useEffect(() => {
     fetchAnnouncements();
@@ -116,6 +119,7 @@ export default function HomeScreen({
       
       if (data) {
         setTimeline(data);
+        setFilteredTimeline(data);
       }
     } catch (error) {
       console.error('Error fetching timeline:', error);
@@ -198,6 +202,22 @@ export default function HomeScreen({
     { name: 'Isya', time: '19:20', active: false },
   ];
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    if (!query.trim()) {
+      setFilteredTimeline(timeline);
+      return;
+    }
+    
+    const filtered = timeline.filter(post => 
+      post.title?.toLowerCase().includes(query.toLowerCase()) ||
+      post.content?.toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredTimeline(filtered);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Decorative Islamic Pattern Background */}
@@ -206,6 +226,7 @@ export default function HomeScreen({
       </div>
 
       {/* Dynamic Islamic Header */}
+      <BlurFade delay={0.2} duration={0.5}>
       <DynamicIslamicHeader 
         notifications={notifications}
         showNotifications={showNotifications}
@@ -213,6 +234,7 @@ export default function HomeScreen({
         session={session}
         onNavigate={onNavigate}
       />
+      </BlurFade>
 
       {/* Old Notifications Dropdown - REMOVED, now using NotificationDropdown in header */}
       {/* <div className="relative">
@@ -407,7 +429,25 @@ export default function HomeScreen({
             </div>
           </div>
 
-          {timeline.length === 0 ? (
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              placeholder="Cari postingan..."
+              className="w-full px-4 py-2 bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute top-2 right-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+
+          {filteredTimeline.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -436,7 +476,7 @@ export default function HomeScreen({
             </motion.div>
           ) : (
             <div className="space-y-3">
-              {timeline.map((post, index) => (
+              {filteredTimeline.map((post, index) => (
                 <BlurFade key={post.id} delay={0.5 + index * 0.08} duration={0.4}>
                   <TwitterStylePost
                     post={post}
