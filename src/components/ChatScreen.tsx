@@ -100,6 +100,7 @@ export default function ChatScreen({
         .insert({
           chat_id: chat.id,
           sender_id: session.user.id,
+          recipient_id: chat.participants.find((id: string) => id !== session.user.id), // TAMBAHKAN INI
           text: newMessage
         })
         .select()
