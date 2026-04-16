@@ -86,6 +86,23 @@ function AppContent() {
       setSession(session);
     });
 
+    // Listen for notification clicks from service worker
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'NOTIFICATION_CLICK') {
+        const { data, targetUrl } = event.data;
+        
+        // Handle navigation based on notification data
+        if (data?.chatId && data?.senderId) {
+          handleNavigation('chat', {
+            chatId: data.chatId,
+            recipientId: data.senderId
+          });
+        }
+      }
+    };
+
+    navigator.serviceWorker?.addEventListener('message', handleServiceWorkerMessage);
+
     // Show splash screen for 3.5 seconds (longer to showcase motion graphics)
     const timer = setTimeout(() => {
       setCurrentScreen('home');
@@ -94,6 +111,7 @@ function AppContent() {
     return () => {
       subscription.unsubscribe();
       clearTimeout(timer);
+      navigator.serviceWorker?.removeEventListener('message', handleServiceWorkerMessage);
     };
   }, []);
 

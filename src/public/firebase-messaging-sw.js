@@ -48,19 +48,44 @@ self.addEventListener('notificationclick', (event) => {
   
   event.notification.close();
 
+  // Extract notification data
+  const notificationData = event.notification.data || {};
+  const { chatId, senderId, type, messageId } = notificationData;
+
+  // Determine the target URL based on notification type
+  let targetUrl = '/';
+  
+  if (type === 'message' && chatId) {
+    // Open the specific chat screen
+    targetUrl = `/?screen=chat&chatId=${chatId}&senderId=${senderId}`;
+  } else if (type === 'product') {
+    targetUrl = '/?screen=marketplace';
+  } else if (type === 'donation') {
+    targetUrl = '/?screen=donation';
+  } else if (type === 'event') {
+    targetUrl = '/?screen=calendar';
+  }
+
   // Open the app when notification is clicked
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       // Check if there's already a window/tab open
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          return client.focus();
+          // Navigate the existing window to the target URL
+          client.focus();
+          client.postMessage({
+            type: 'NOTIFICATION_CLICK',
+            data: notificationData,
+            targetUrl: targetUrl
+          });
+          return client;
         }
       }
       
-      // If no window is open, open a new one
+      // If no window is open, open a new one with the target URL
       if (clients.openWindow) {
-        return clients.openWindow('/');
+        return clients.openWindow(targetUrl);
       }
     })
   );
