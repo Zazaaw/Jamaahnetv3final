@@ -56,6 +56,7 @@ export default function HomeScreen({
   const [showNotifications, setShowNotifications] = useState(false);
   const [timeline, setTimeline] = useState<TimelinePost[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string>('Semua');
   const [filteredTimeline, setFilteredTimeline] = useState<TimelinePost[]>([]);
 
   useEffect(() => {
@@ -64,7 +65,7 @@ export default function HomeScreen({
     if (session) {
       fetchNotifications();
     }
-  }, [session]);
+  }, [session, activeCategory]); 
 
   useEffect(() => {
     if (announcements.length > 0) {
@@ -100,9 +101,14 @@ export default function HomeScreen({
       let query = supabase
         .from('timeline_posts')
         .select('*, profiles(name, avatar_url)')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(10); // <-- INI FITUR E: CUMA 10 POSTINGAN WAK!
       
       // If user is logged in, fetch approved posts OR user's own pending posts
+      // FITUR E: Filter Kategori
+      if (activeCategory !== 'Semua') {
+        query = query.eq('category', activeCategory);
+      }
       // If not logged in, only fetch approved posts
       if (session?.user?.id) {
         query = query.or(`is_approved.eq.true,and(is_approved.eq.false,user_id.eq.${session.user.id})`);
@@ -429,6 +435,24 @@ export default function HomeScreen({
             </div>
           </div>
 
+          {/* FITUR E: Filter Kategori Timeline */}
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
+            {['Semua', 'Sosial', 'Bisnis', 'Donasi'].map((cat) => (
+              <motion.button
+                key={cat}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-5 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all shadow-sm ${
+                  activeCategory === cat
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-transparent'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+                }`}
+              >
+                {cat}
+              </motion.button>
+            ))}
+          </div>
+
           <div className="relative">
             <input
               type="text"
@@ -500,7 +524,7 @@ export default function HomeScreen({
 }
 
 // Twitter-style Post Component
-function TwitterStylePost({
+export function TwitterStylePost({
   post,
   session,
   onNavigate,

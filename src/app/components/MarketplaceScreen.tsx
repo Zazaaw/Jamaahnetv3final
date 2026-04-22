@@ -7,6 +7,7 @@ import PostProductModal from './PostProductModal';
 import { IslamicPattern } from './IslamicPattern';
 import { StarRating } from './StarRating';
 import { BlurFade } from './magicui/blur-fade';
+import TimelineArchive from './TimelineArchive';
 
 interface Product {
   id: string;
@@ -49,7 +50,7 @@ export default function MarketplaceScreen({
   onNavigate: (screen: string, data?: any) => void;
   onBack?: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState<'c2c' | 'b2c'>('c2c');
+  const [activeTab, setActiveTab] = useState<'c2c' | 'kabar'>('c2c');
   const [products, setProducts] = useState<Product[]>([]);
   const [showPostModal, setShowPostModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -188,14 +189,14 @@ export default function MarketplaceScreen({
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.97 }}
-              onClick={() => setActiveTab('b2c')}
+              onClick={() => setActiveTab('kabar')}
               className={`flex-1 px-4 py-3 rounded-xl transition-all font-medium ${
-                activeTab === 'b2c'
+                activeTab === 'kabar'
                   ? 'bg-white text-orange-600 shadow-lg'
                   : 'text-white/80'
               }`}
             >
-              🕌 Katalog Bisnis
+              📢 Kabar Bisnis
             </motion.button>
           </div>
         </div>
@@ -294,132 +295,80 @@ export default function MarketplaceScreen({
         )}
       </AnimatePresence>
 
-      {/* Products Grid */}
+      {/* Products Grid atau Kabar */}
       <div className="relative z-10 p-6">
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari produk atau jasa..."
-              className="w-full pl-12 pr-12 py-3.5 bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 transition-all text-gray-900 dark:text-white placeholder-gray-400"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
-          </div>
-          {searchQuery && (
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              Ditemukan {filteredProducts.length} hasil untuk "{searchQuery}"
-            </p>
-          )}
-        </div>
-
-        {filteredProducts.length > 0 ? (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="grid grid-cols-2 gap-4"
-          >
-            {filteredProducts.map((product, index) => (
-              <BlurFade key={product.id} delay={0.2 + index * 0.08} duration={0.4}>
-                <motion.button
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ y: -4 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => onNavigate('product-detail', product)}
-                  className="group bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700/50 overflow-hidden text-left card-hover"
-                >
-                {/* Product Image */}
-                <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 relative overflow-hidden">
-                  <ImageWithFallback
-                    src={product.images[0]}
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  
-                  {/* Badges */}
-                  <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
-                    {product.subcategory && (
-                      <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-sm shadow-lg">
-                        {product.subcategory}
-                      </div>
-                    )}
-                    {product.is_barter_allowed && (
-                      <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 backdrop-blur-sm shadow-lg">
-                        <ArrowLeftRight className="w-3 h-3" />
-                        Barter
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-
-                {/* Product Info */}
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                      {formatPrice(product.price)}
-                    </p>
-                  </div>
-                  
-                  {/* Rating */}
-                  {productRatings[product.id] && (
-                    <div className="mb-2">
-                      <StarRating 
-                        rating={Math.round(productRatings[product.id].avg)}
-                        readonly
-                        size="sm"
-                        showCount
-                        count={productRatings[product.id].count}
-                      />
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-full flex items-center justify-center text-[10px]">
-                      👤
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {product.seller_name}
-                    </p>
-                  </div>
-                </div>
-              </motion.button>
-              </BlurFade>
-            ))}
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-20"
-          >
-            <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-3xl flex items-center justify-center mx-auto mb-4">
-              <Search className="w-10 h-10 text-gray-400" />
+        
+        {/* LAMPU HIJAU: Cuma muncul kalau tab Produk (c2c) aktif */}
+        {activeTab === 'c2c' && (
+          <>
+            {/* Search Bar */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari produk atau jasa..."
+                  className="w-full pl-12 pr-12 py-3.5 bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 transition-all text-gray-900 dark:text-white placeholder-gray-400"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+              {searchQuery && (
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  Ditemukan {filteredProducts.length} hasil untuk "{searchQuery}"
+                </p>
+              )}
             </div>
-            <p className="text-gray-500 dark:text-gray-400 font-medium">
-              Belum ada produk di kategori ini
-            </p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
-              Coba pilih kategori lain
-            </p>
-          </motion.div>
+
+            {/* List Produk */}
+            {filteredProducts.length > 0 ? (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="grid grid-cols-2 gap-4"
+              >
+                {/* ... (Isi map produk kau biarkan sama persis seperti sebelumnya) ... */}
+                {filteredProducts.map((product, index) => (
+                  <BlurFade key={product.id} delay={0.2 + index * 0.08} duration={0.4}>
+                     {/* ... Kodingan produk Card-mu ... */}
+                     <motion.button
+                       onClick={() => onNavigate('product-detail', product)}
+                       className="group bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700/50 overflow-hidden text-left card-hover"
+                     >
+                       {/* Isi Card Produk */}
+                       <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 relative overflow-hidden">
+                         <ImageWithFallback src={product.images[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                       </div>
+                       <div className="p-4">
+                         <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">{product.name}</h3>
+                         <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{formatPrice(product.price)}</p>
+                       </div>
+                     </motion.button>
+                  </BlurFade>
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div className="text-center py-20">
+                 {/* ... Tampilan Kosong Produk ... */}
+                 <p className="text-gray-500">Belum ada produk</p>
+              </motion.div>
+            )}
+          </>
+        )}
+
+        {/* LAMPU HIJAU: Cuma muncul kalau tab Kabar aktif */}
+        {activeTab === 'kabar' && (
+          <div className="space-y-4">
+            <TimelineArchive category="Bisnis" session={session} onNavigate={onNavigate} />
+          </div>
         )}
 
         {/* Bottom Spacing */}

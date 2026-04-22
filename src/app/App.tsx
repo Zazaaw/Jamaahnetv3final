@@ -448,6 +448,14 @@ function AppContent() {
     );
   }
 
+  {currentScreen === 'donation' && (
+  <DonationScreen 
+    session={session} 
+    onNavigate={handleNavigation} // <--- PASTIKAN INI ADA YAK!
+    onBack={() => setCurrentScreen('home')} 
+  />
+)}
+
   if (currentScreen === 'timeline-detail' && selectedTimeline) {
     return (
       <>

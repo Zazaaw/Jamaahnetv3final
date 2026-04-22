@@ -7,6 +7,7 @@ import DonationModal from './DonationModal';
 import { IslamicPattern } from './IslamicPattern';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { toast } from 'sonner';
+import TimelineArchive from './TimelineArchive';
 
 interface Campaign {
   id: string;
@@ -18,7 +19,8 @@ interface Campaign {
   created_at: number;
 }
 
-export default function DonationScreen({ session, onBack }: { session: any; onBack?: () => void }) {
+export default function DonationScreen({ session, onBack ,onNavigate }: { session: any; onNavigate?: (screen: string, data?: any) => void; onBack?: () => void }) {
+  const [viewMode, setViewMode] = useState<'kampanye' | 'kabar'>('kampanye');
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [showDonationModal, setShowDonationModal] = useState(false);
@@ -258,93 +260,131 @@ export default function DonationScreen({ session, onBack }: { session: any; onBa
           </motion.button>
         )}
 
-        {/* Campaign List */}
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Target className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-xl font-bold dark:text-white">Kampanye Donasi</h2>
+        {/* Toggle Tab Kampanye & Kabar */}
+          <div className="flex bg-gray-100/80 dark:bg-gray-800/50 p-1.5 rounded-2xl mb-6 backdrop-blur-sm border border-gray-200 dark:border-gray-700/50">
+            <motion.button 
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setViewMode('kampanye')}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                viewMode === 'kampanye' 
+                  ? 'bg-white dark:bg-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              🎯 Target Donasi
+            </motion.button>
+            <motion.button 
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setViewMode('kabar')}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                viewMode === 'kabar' 
+                  ? 'bg-white dark:bg-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              📢 Kabar Donasi
+            </motion.button>
           </div>
 
-          <div className="space-y-4">
-            {campaigns.map((campaign, index) => {
-              const progress = calculateProgress(campaign.current_amount, campaign.target_amount);
+        {/* Konten Bawah: Kampanye ATAU Kabar */}
+        {viewMode === 'kampanye' ? (
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Target className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <h2 className="text-xl font-bold dark:text-white">Kampanye Donasi</h2>
+            </div>
 
-              return (
-                <motion.div
-                  key={campaign.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 + index * 0.1 }}
-                  className="card-hover bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700/50 overflow-hidden group"
-                >
-                  {/* Campaign Image */}
-                  <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 relative overflow-hidden">
-                    <ImageWithFallback
-                      src={campaign.image}
-                      alt={campaign.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    
-                    {/* Progress Badge */}
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-3">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs font-semibold text-gray-600">Progress</span>
-                          <span className="text-xs font-bold text-emerald-600">{progress.toFixed(0)}%</span>
-                        </div>
-                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${progress}%` }}
-                            transition={{ delay: 0.6 + index * 0.1, duration: 0.8 }}
-                            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
-                          />
+            <div className="space-y-4">
+              {campaigns.map((campaign, index) => {
+                const progress = calculateProgress(campaign.current_amount, campaign.target_amount);
+
+                return (
+                  <motion.div
+                    key={campaign.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 + index * 0.1 }}
+                    className="card-hover bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700/50 overflow-hidden group"
+                  >
+                    {/* Campaign Image */}
+                    <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 relative overflow-hidden">
+                      <ImageWithFallback
+                        src={campaign.image}
+                        alt={campaign.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      
+                      {/* Progress Badge */}
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-3">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-xs font-semibold text-gray-600">Progress</span>
+                            <span className="text-xs font-bold text-emerald-600">{progress.toFixed(0)}%</span>
+                          </div>
+                          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${progress}%` }}
+                              transition={{ delay: 0.6 + index * 0.1, duration: 0.8 }}
+                              className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Campaign Details */}
-                  <div className="p-5">
-                    <h3 className="font-bold text-gray-900 dark:text-white mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                      {campaign.title}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
-                      {campaign.description}
-                    </p>
+                    {/* Campaign Details */}
+                    <div className="p-5">
+                      <h3 className="font-bold text-gray-900 dark:text-white mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                        {campaign.title}
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
+                        {campaign.description}
+                      </p>
 
-                    {/* Amount Info */}
-                    <div className="flex items-center justify-between mb-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl">
-                      <div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Terkumpul</div>
-                        <div className="font-bold text-emerald-600 dark:text-emerald-400">
-                          {formatPrice(campaign.current_amount)}
+                      {/* Amount Info */}
+                      <div className="flex items-center justify-between mb-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl">
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Terkumpul</div>
+                          <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                            {formatPrice(campaign.current_amount)}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Target</div>
+                          <div className="font-semibold text-gray-700 dark:text-gray-300">
+                            {formatPrice(campaign.target_amount)}
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Target</div>
-                        <div className="font-semibold text-gray-700 dark:text-gray-300">
-                          {formatPrice(campaign.target_amount)}
-                        </div>
-                      </div>
+
+                      {/* Donate Button */}
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => handleDonate(campaign)}
+                        className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 px-6 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                      >
+                        <HeartHandshake className="w-5 h-5" />
+                        Donasi Sekarang
+                      </motion.button>
                     </div>
-
-                    {/* Donate Button */}
-                    <motion.button
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => handleDonate(campaign)}
-                      className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 px-6 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
-                    >
-                      <HeartHandshake className="w-5 h-5" />
-                      Donasi Sekarang
-                    </motion.button>
-                  </div>
-                </motion.div>
-              );
-            })}
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <h2 className="text-xl font-bold dark:text-white">Kabar Donasi Terbaru</h2>
+            </div>
+            <div className="space-y-4">
+              <TimelineArchive category="Donasi" session={session} onNavigate={onNavigate} />
+            </div>
+          </div>
+        )}
 
         {/* Bottom Spacing */}
         <div className="h-20" />

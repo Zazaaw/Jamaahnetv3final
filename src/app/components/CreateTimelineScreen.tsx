@@ -17,6 +17,7 @@ export default function CreateTimelineScreen({
 }) {
   const [title, setTitle] = useState(editPost?.title || '');
   const [content, setContent] = useState(editPost?.content || '');
+  const [category, setCategory] = useState(editPost?.category || 'Sosial');
   const [imageUrls, setImageUrls] = useState<string[]>(editPost?.images || editPost?.image ? [editPost.image] : []);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>(editPost?.images || editPost?.image ? [editPost.image] : []);
@@ -134,6 +135,7 @@ export default function CreateTimelineScreen({
           .update({
             title: title.trim(),
             content: content.trim(),
+            category: category,
             image: imageUrl || null,
           })
           .eq('id', editPost.id);
@@ -149,6 +151,7 @@ export default function CreateTimelineScreen({
             user_id: session.user.id,
             title: title.trim(),
             content: content.trim(),
+            category: category,
             image: imageUrl || null,
           });
 
@@ -200,6 +203,29 @@ export default function CreateTimelineScreen({
           onSubmit={handleSubmit}
           className="space-y-6"
         >
+          {/* Category Input */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Kategori Postingan
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {['Sosial', 'Bisnis', 'Donasi'].map((cat) => (
+                <motion.button
+                  key={cat}
+                  whileTap={{ scale: 0.95 }}
+                  type="button"
+                  onClick={() => setCategory(cat)}
+                  className={`py-3 rounded-2xl font-medium text-sm transition-all border ${
+                    category === cat
+                      ? 'bg-emerald-100 border-emerald-500 text-emerald-700 dark:bg-emerald-900/40 dark:border-emerald-400 dark:text-emerald-300'
+                      : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400'
+                  }`}
+                >
+                  {cat === 'Bisnis' ? '💼 ' : cat === 'Donasi' ? '💝 ' : '🤝 '}{cat}
+                </motion.button>
+              ))}
+            </div>
+          </div>
           {/* Title Input */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
