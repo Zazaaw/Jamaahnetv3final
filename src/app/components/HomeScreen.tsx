@@ -703,8 +703,8 @@ export function TwitterStylePost({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* Header */}
-          <div className="flex items-center gap-2 mb-1">
+          {/* Header & Badge Kategori */}
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <span 
               className="font-bold text-gray-900 dark:text-white hover:underline cursor-pointer"
               onClick={(e) => {
@@ -719,6 +719,16 @@ export function TwitterStylePost({
                 day: 'numeric',
                 month: 'short',
               })}
+            </span>
+            
+            {/* INI DIA BADGE-NYA WAK! */}
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+              post.category === 'Bisnis' ? 'bg-orange-50 border-orange-200 text-orange-600 dark:bg-orange-900/30 dark:border-orange-700/50 dark:text-orange-400' :
+              post.category === 'Donasi' ? 'bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-900/30 dark:border-emerald-700/50 dark:text-emerald-400' :
+              'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/30 dark:border-blue-700/50 dark:text-blue-400'
+            }`}>
+              {post.category === 'Bisnis' ? '💼 ' : post.category === 'Donasi' ? '💝 ' : '🤝 '}
+              {post.category || 'Sosial'}
             </span>
           </div>
 

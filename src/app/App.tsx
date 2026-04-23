@@ -561,7 +561,7 @@ function AppContent() {
       <div className="flex-1 overflow-auto pb-20">
         {currentScreen === 'home' && <HomeScreen session={session} onNavigate={handleNavigation} key={homeRefreshKey} />}
         {currentScreen === 'explore' && <ExploreScreen session={session} onNavigate={handleNavigation} />}
-        {currentScreen === 'calendar' && <CalendarScreen session={session} onBack={() => setCurrentScreen('home')} />}
+        {currentScreen === 'calendar' && <CalendarScreen session={session} onNavigate={handleNavigation} onBack={() => setCurrentScreen('home')} />}
         {currentScreen === 'marketplace' && (
           <MarketplaceScreen 
             session={session}
