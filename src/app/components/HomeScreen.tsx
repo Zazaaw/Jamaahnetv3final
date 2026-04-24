@@ -403,7 +403,7 @@ export default function HomeScreen({
               className="flex items-center gap-2 px-4 py-2 bg-teal-50 dark:bg-teal-900/20 rounded-full border border-teal-100 dark:border-teal-800 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors flex-1 justify-center"
             >
               <Info className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-              <span className="text-[11px] font-bold text-teal-700 dark:text-teal-300">Tentang Jamaah</span>
+              <span className="text-[11px] font-bold text-teal-700 dark:text-teal-300">Tentang Jamaah.net</span>
             </button>
 
             <button 
@@ -430,27 +430,9 @@ export default function HomeScreen({
               <Users className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Timeline Kegiatan</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Aktivitas jamaah terkini</p>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Timeline</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Konten terkini</p>
             </div>
-          </div>
-
-          {/* FITUR E: Filter Kategori Timeline */}
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
-            {['Semua', 'Sosial', 'Bisnis', 'Donasi'].map((cat) => (
-              <motion.button
-                key={cat}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-5 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all shadow-sm ${
-                  activeCategory === cat
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-transparent'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
-                }`}
-              >
-                {cat}
-              </motion.button>
-            ))}
           </div>
 
           <div className="relative">
