@@ -473,24 +473,17 @@ function AppContent() {
           onDelete={async () => {
             if (confirm('Yakin ingin menghapus postingan ini?')) {
               try {
-                const response = await fetch(
-                  `https://${projectId}.supabase.co/functions/v1/make-server-4319e602/api/timeline/${selectedTimeline.id}`,
-                  {
-                    method: 'DELETE',
-                    headers: {
-                      'Authorization': `Bearer ${session?.access_token}`,
-                    },
-                  }
-                );
+                // KITA PAKAI JALUR SUPABASE LANGSUNG WAK BIAR GACOR
+                const { error } = await supabase
+                  .from('timeline_posts')
+                  .delete()
+                  .eq('id', selectedTimeline.id);
 
-                if (response.ok) {
-                  toast.success('Postingan berhasil dihapus');
-                  setCurrentScreen('home');
-                  setHomeRefreshKey(prev => prev + 1);
-                } else {
-                  const errorData = await response.json();
-                  toast.error(errorData.error || 'Gagal menghapus postingan');
-                }
+                if (error) throw error;
+
+                toast.success('Postingan berhasil dihapus! 🗑️');
+                setCurrentScreen('home');
+                setHomeRefreshKey(prev => prev + 1); // Biar beranda auto-refresh
               } catch (error) {
                 console.error('Error deleting post:', error);
                 toast.error('Gagal menghapus postingan');
