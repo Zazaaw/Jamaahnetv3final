@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, MessageCircle, Loader2, Trash2 } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Loader2, Trash2, MoreVertical, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner@2.0.3';
 import { getSupabaseClient } from '../utils/supabase/client';
@@ -35,6 +35,9 @@ export default function ChatListScreen({
   const [loading, setLoading] = useState(true);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  
+  // State baru untuk ngatur menu titik tiga wak
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     fetchChats();
@@ -89,7 +92,6 @@ export default function ChatListScreen({
             (profilesData || []).forEach((profile: UserProfile) => {
               profiles[profile.id] = profile;
             });
-            console.log('All profiles:', profiles);
             setUserProfiles(profiles);
           }
         }
@@ -130,8 +132,9 @@ export default function ChatListScreen({
 
   const handleDeleteChat = async (chatId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    setActiveDropdown(null); // Tutup dropdown pas ngehapus
     
-    if (!confirm('Hapus percakapan ini?')) return;
+    if (!confirm('Yakin mau menghapus percakapan ini?')) return;
     
     setDeletingChatId(chatId);
     try {
@@ -157,7 +160,10 @@ export default function ChatListScreen({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-indigo-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div 
+      className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-indigo-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950"
+      onClick={() => setActiveDropdown(null)} // Tutup dropdown kalau klik dimana aja
+    >
       {/* Background Pattern */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <IslamicPattern className="text-blue-600 dark:text-blue-400 opacity-[0.02]" />
@@ -228,65 +234,99 @@ export default function ChatListScreen({
                   className="relative group"
                 >
                   <button
-                    onClick={() => onSelectChat(chat)}
-                    className="w-full bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl p-5 shadow-lg border border-gray-100 dark:border-gray-700/50 text-left hover:shadow-xl transition-all"
+                    onClick={() => {
+                      setActiveDropdown(null);
+                      onSelectChat(chat);
+                    }}
+                    className="w-full bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl p-4 shadow-sm border border-gray-100 dark:border-gray-700/50 text-left hover:shadow-md transition-all flex items-center relative"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {otherUser.avatar_url ? (
-                          <img 
-                            src={otherUser.avatar_url} 
-                            alt={otherUser.name} 
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-white text-lg">
-                            {otherUser.name.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0 pr-12">
-                        <div className="flex justify-between items-start gap-2 mb-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                            {otherUser.name}
-                          </h3>
-                          <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
+                    {/* Avatar */}
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {otherUser.avatar_url ? (
+                        <img 
+                          src={otherUser.avatar_url} 
+                          alt={otherUser.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-white text-lg font-bold">
+                          {otherUser.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 ml-4 pr-10"> {/* pr-10 kasih ruang buat titik tiga */}
+                      <div className="flex justify-between items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                          {otherUser.name}
+                        </h3>
+                        
+                        {/* Wrapper Tanggal & Badge Notif */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {unreadCounts[chat.id] > 0 && (
+                            <div className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                              {unreadCounts[chat.id]} Baru
+                            </div>
+                          )}
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
                             {new Date(chat.last_message_at).toLocaleDateString('id-ID', {
                               day: 'numeric',
                               month: 'short',
                             })}
                           </span>
                         </div>
-                        {otherUser.username && (
-                          <p className="text-xs text-gray-500 dark:text-gray-500 mb-1">
-                            @{otherUser.username}
-                          </p>
-                        )}
-                        <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                          {getLastMessage(chat)}
-                        </p>
-                        {unreadCounts[chat.id] > 0 && (
-                          <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
-                            {unreadCounts[chat.id]}
-                          </div>
-                        )}
                       </div>
+                      
+                      {otherUser.username && (
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 uppercase tracking-wide">
+                          @{otherUser.username}
+                        </p>
+                      )}
+                      
+                      <p className="text-sm text-gray-600 dark:text-gray-400 truncate flex items-center gap-2">
+                        {getLastMessage(chat)}
+                      </p>
                     </div>
                   </button>
                   
-                  {/* Delete Button */}
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => handleDeleteChat(chat.id, e)}
-                    disabled={deletingChatId === chat.id}
-                    className="absolute top-5 right-5 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity disabled:opacity-50"
-                  >
-                    {deletingChatId === chat.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-5 h-5" />
-                    )}
-                  </motion.button>
+                  {/* Titik Tiga (More Options) */}
+                  <div className="absolute top-1/2 -translate-y-1/2 right-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdown(activeDropdown === chat.id ? null : chat.id);
+                      }}
+                      className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-full transition-colors"
+                    >
+                      <MoreVertical className="w-5 h-5" />
+                    </button>
+
+                    {/* Dropdown Menu Hapus */}
+                    <AnimatePresence>
+                      {activeDropdown === chat.id && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                          className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50"
+                        >
+                          <button
+                            onClick={(e) => handleDeleteChat(chat.id, e)}
+                            disabled={deletingChatId === chat.id}
+                            className="w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors disabled:opacity-50"
+                          >
+                            {deletingChatId === chat.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                            Hapus Chat
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </motion.div>
               );
             })}

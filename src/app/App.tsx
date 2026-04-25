@@ -617,6 +617,7 @@ function AppContent() {
                   onClick={() => {
                     if (session) {
                       setCurrentScreen('chat-list');
+                      setUnreadMessageCount(0); // <--- INI WAK KUNCI BIAR LANGSUNG HILANG
                     } else {
                       setCurrentScreen('auth');
                     }
