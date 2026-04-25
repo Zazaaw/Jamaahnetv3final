@@ -10,6 +10,7 @@ import {
 import { getSupabaseClient } from '../utils/supabase/client';
 import { toast } from 'sonner';
 import CreateAnnouncementModal from './modals/CreateAnnouncementModal';
+import CreateArticleModal from './modals/CreateArticleModal';
 
 interface AdminDashboardProps {
   session: any;
@@ -361,8 +362,8 @@ export default function AdminDashboard({ session, onNavigate }: AdminDashboardPr
           {/* 4. TIMELINE / POSTS TAB (AGGREGATOR) */}
           {activeTab === 'timeline' && (
             <motion.div key="timeline" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <button onClick={() => setShowCreateAnnouncement(true)} className="w-full mb-6 bg-gray-900 text-white dark:bg-white dark:text-gray-900 py-4 rounded-[2rem] text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"><Plus className="w-5 h-5"/> New Broadcast</button>
-              <CreateAnnouncementModal session={session} isOpen={showCreateAnnouncement} onClose={() => setShowCreateAnnouncement(false)} onSuccess={fetchAllData} />
+              <button onClick={() => setShowCreateAnnouncement(true)} className="w-full mb-6 bg-gray-900 text-white dark:bg-white dark:text-gray-900 py-4 rounded-[2rem] text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"><Plus className="w-5 h-5"/> New Broadcast Article for Explore</button>
+              <CreateArticleModal session={session} isOpen={showCreateAnnouncement} onClose={() => setShowCreateAnnouncement(false)} onSuccess={fetchAllData} />
               
               <div className="space-y-4">
                 {timelinePosts.map((post) => (
