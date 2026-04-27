@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Wallet, MessageSquare, History, LogOut, ChevronRight, Edit, Moon, Sun, Settings, Sparkles, Users, Clock, Menu, X, Grid, Heart, MessageCircle, Bookmark, CreditCard, Lock, Phone, Shield, Info, ShoppingBag, Languages, Repeat2, Share2, MoreVertical, Trash2, Award, Share, CheckCircle } from 'lucide-react';
+import { User, Wallet, MessageSquare, History, LogOut, ChevronRight, Edit, Moon, Sun, Settings, Sparkles, Users, Clock, Menu, X, Grid, Heart, MessageCircle, Bookmark, CreditCard, Lock, Phone, Shield, Info, ShoppingBag, Languages, Repeat2, Share2, MoreVertical, Trash2, Award, Share, CheckCircle, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { projectId } from '../utils/supabase/info';
@@ -772,10 +772,6 @@ export default function ProfileScreen({
                   delay={0.3}
                 />
 
-                {/* Contact Us Removed */}
-
-                {/* About Jamaah.net Removed */}
-
                 {/* Admin Dashboard - Only visible for Admin role */}
                 {profile?.role === 'Admin' && (
                   <SettingsMenuItem
@@ -786,6 +782,21 @@ export default function ProfileScreen({
                     onClick={() => {
                       setShowSettingsMenu(false);
                       onNavigate('admin-dashboard');
+                    }}
+                    delay={0.4}
+                  />
+                )}
+
+                {/* Dashboard Ekonomi (Aggregator) - Khusus Divisi Ekonomi / Admin / User dengan ID EK- */}
+                {(profile?.role === 'Admin' || profile?.role === 'Divisi Ekonomi' || profile?.member_id?.startsWith('EK-')) && (
+                  <SettingsMenuItem
+                    icon={TrendingUp}
+                    title="Dashboard Ekonomi"
+                    subtitle="Pusat Komando Bisnis (Aggregator)"
+                    gradient="from-emerald-500 to-teal-500"
+                    onClick={() => {
+                      setShowSettingsMenu(false);
+                      onNavigate('business-dashboard');
                     }}
                     delay={0.45}
                     isHighlighted={true}

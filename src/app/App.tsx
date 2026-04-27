@@ -35,10 +35,11 @@ import MemberDirectory from './components/MemberDirectory';
 import AppFooter from './components/AppFooter';
 import InitData from './components/InitData';
 import ResetPasswordScreen from './components/ResetPasswordScreen';
+import BusinessDashboardScreen from './components/BusinessDashboardScreen';
 
 const supabase = getSupabaseClient();
 
-type Screen = 'splash' | 'home' | 'explore' | 'calendar' | 'marketplace' | 'donation' | 'profile' | 'auth' | 'pending-approval' | 'product-detail' | 'reset-password' | 'chat-list' | 'chat' | 'connections' | 'article-detail' | 'all-articles' | 'create-timeline' | 'timeline-detail' | 'contact' | 'about' | 'admin-dashboard' | 'public-profile' | 'member-directory';
+type Screen = 'splash' | 'home' | 'explore' | 'calendar' | 'marketplace' | 'donation' | 'profile' | 'auth' | 'pending-approval' | 'product-detail' | 'reset-password' | 'chat-list' | 'chat' | 'connections' | 'article-detail' | 'all-articles' | 'create-timeline' | 'timeline-detail' | 'contact' | 'about' | 'admin-dashboard' | 'public-profile' | 'member-directory' | 'business-dashboard';
 
 export default function App() {
   return (
@@ -546,12 +547,24 @@ function AppContent() {
   if (currentScreen === 'public-profile' && selectedUser) {
     return (
       <>
-        <PublicProfileScreen 
-          session={session} 
-          user={selectedUser} 
+        <PublicProfileScreen
+          session={session}
+          user={selectedUser}
           onNavigate={handleNavigation}
           onStartChat={handleStartChat}
           onBack={() => setCurrentScreen(previousScreen)}
+        />
+        <Toaster position="top-center" richColors />
+      </>
+    );
+  }
+
+  if (currentScreen === 'business-dashboard') {
+    return (
+      <>
+        <BusinessDashboardScreen
+          session={session}
+          onBack={() => setCurrentScreen('home')}
         />
         <Toaster position="top-center" richColors />
       </>
