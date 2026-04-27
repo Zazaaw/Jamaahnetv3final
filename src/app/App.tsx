@@ -34,10 +34,11 @@ import PublicProfileScreen from './components/PublicProfileScreen';
 import MemberDirectory from './components/MemberDirectory';
 import AppFooter from './components/AppFooter';
 import InitData from './components/InitData';
+import ResetPasswordScreen from './components/ResetPasswordScreen';
 
 const supabase = getSupabaseClient();
 
-type Screen = 'splash' | 'home' | 'explore' | 'calendar' | 'marketplace' | 'donation' | 'profile' | 'auth' | 'pending-approval' | 'product-detail' | 'chat-list' | 'chat' | 'connections' | 'article-detail' | 'all-articles' | 'create-timeline' | 'timeline-detail' | 'contact' | 'about' | 'admin-dashboard' | 'public-profile' | 'member-directory';
+type Screen = 'splash' | 'home' | 'explore' | 'calendar' | 'marketplace' | 'donation' | 'profile' | 'auth' | 'pending-approval' | 'product-detail' | 'reset-password' | 'chat-list' | 'chat' | 'connections' | 'article-detail' | 'all-articles' | 'create-timeline' | 'timeline-detail' | 'contact' | 'about' | 'admin-dashboard' | 'public-profile' | 'member-directory';
 
 export default function App() {
   return (
@@ -82,8 +83,13 @@ function AppContent() {
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+
+      // INI DIA KUNCINYA WAK! 
+      if (event === 'PASSWORD_RECOVERY') {
+        setCurrentScreen('reset-password');
+      }
     });
 
     // Listen for notification clicks from service worker
@@ -322,6 +328,13 @@ function AppContent() {
       </>
     );
   }
+
+{currentScreen === 'reset-password' && (
+    <ResetPasswordScreen 
+    onSuccess={() => setCurrentScreen('home')}
+    onBack={() => setCurrentScreen('auth')}
+ />
+)}
 
   if (currentScreen === 'pending-approval') {
     return (
@@ -575,7 +588,7 @@ function AppContent() {
       </div>
 
       {/* Liquid Glass Tab Bar - iOS 26 Style - HIDDEN on calendar, marketplace, donation screens */}
-      {!['calendar', 'marketplace', 'donation'].includes(currentScreen) && (
+      {!['calendar', 'marketplace', 'donation', 'reset-password'].includes(currentScreen) && (
         <div className="fixed bottom-0 left-0 right-0 pointer-events-none px-4 pb-6 safe-area-bottom z-50">
           <motion.div 
             initial={{ y: 100, opacity: 0 }}
