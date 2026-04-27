@@ -307,9 +307,29 @@ export default function AuthScreen({
 
               {/* Password */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Password
-                </label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Password
+                  </label>
+                  
+                  {/* INI DIA WAK: Tombol Lupa Password pindah ke sini! */}
+                  {/* Cuma muncul pas lagi mode Login (!isSignup) */}
+                  {!isSignup && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const adminWaNumber = "6285161511017"; // Ganti nomor Pakde di sini
+                        const message = "Assalamualaikum Admin Jamaah.net, saya lupa password akun saya. Mohon bantuannya untuk direset ya.";
+                        const waUrl = `https://wa.me/${adminWaNumber}?text=${encodeURIComponent(message)}`;
+                        window.open(waUrl, '_blank');
+                      }}
+                      className="text-xs font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 hover:underline transition-all"
+                    >
+                      Lupa Password?
+                    </button>
+                  )}
+                </div>
+                
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
