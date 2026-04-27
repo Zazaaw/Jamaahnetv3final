@@ -335,13 +335,6 @@ function AppContent() {
     );
   }
 
-{currentScreen === 'reset-password' && (
-    <ResetPasswordScreen 
-    onSuccess={() => setCurrentScreen('home')}
-    onBack={() => setCurrentScreen('auth')}
- />
-)}
-
   if (currentScreen === 'pending-approval') {
     return (
       <>
@@ -474,6 +467,7 @@ function AppContent() {
     onBack={() => setCurrentScreen('home')} 
   />
 )}
+  
 
   if (currentScreen === 'timeline-detail' && selectedTimeline) {
     return (
@@ -589,6 +583,14 @@ function AppContent() {
             onLogout={handleLogout}
             darkMode={darkMode}
             onToggleDarkMode={handleToggleDarkMode}
+          />
+        )}
+
+        {/* WAK, TARUH RESET PASSWORDNYA DI SINI!! */}
+        {currentScreen === 'reset-password' && (
+          <ResetPasswordScreen 
+            onSuccess={() => setCurrentScreen('home')}
+            onBack={() => setCurrentScreen('auth')}
           />
         )}
       </div>
