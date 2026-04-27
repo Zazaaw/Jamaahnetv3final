@@ -111,7 +111,13 @@ function AppContent() {
 
     // Show splash screen for 3.5 seconds (longer to showcase motion graphics)
     const timer = setTimeout(() => {
-      setCurrentScreen('home');
+      setCurrentScreen((prevScreen) => {
+        // CEGAH DITIMPA WAK! Kalau dia masuk dari link email, biarin di reset-password
+        if (prevScreen === 'reset-password' || window.location.hash.includes('type=recovery')) {
+          return 'reset-password';
+        }
+        return 'home';
+      });
     }, 3500);
 
     return () => {
