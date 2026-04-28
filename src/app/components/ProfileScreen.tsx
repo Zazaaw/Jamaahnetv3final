@@ -154,7 +154,7 @@ export default function ProfileScreen({
 
   const handleShareProfile = async () => {
     const profileUrl = `${window.location.origin}/profile/${profile?.username || profile?.id}`;
-    const text = `Mari terhubung di Jamaah.net! Gunakan ID Member saya: ${profile?.member_id}`;
+    const text = `Mari terhubung di Jamaah.net! Gunakan ID Member saya (sebagai kode undangan): ${profile?.member_id}`;
 
     try {
       // Check if running in a secure context and share is supported
@@ -787,7 +787,7 @@ export default function ProfileScreen({
                   />
                 )}
 
-                {/* Dashboard Ekonomi (Aggregator) - Khusus Divisi Ekonomi / Admin / User dengan ID EK- */}
+                {/* Dashboard Ekonomi (Aggregator) - Khusus Divisi Ekonomi / Admin / User dengan ID EK- 
                 {(profile?.role === 'Admin' || profile?.role === 'Divisi Ekonomi' || profile?.member_id?.startsWith('EK-')) && (
                   <SettingsMenuItem
                     icon={TrendingUp}
@@ -802,6 +802,7 @@ export default function ProfileScreen({
                     isHighlighted={true}
                   />
                 )}
+                  */}
 
                 {/* Logout */}
                 <motion.button
