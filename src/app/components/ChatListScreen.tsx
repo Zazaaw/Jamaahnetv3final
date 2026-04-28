@@ -66,7 +66,22 @@ export default function ChatListScreen({
         console.error('Error fetching chats:', chatsError);
         setChats([]);
       } else {
-        setChats(chatsData || []);
+        // MANTRA PENGURUT WAKTU: Urutkan pesan dari yang paling lama ke baru
+        const processedChats = (chatsData || []).map((c: any) => ({
+          ...c,
+          messages: (c.messages || []).sort((a: any, b: any) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          )
+        }));
+
+        // JURUS SAKTI: Urutkan list obrolan pakai tanggal dari bubble pesan terbarunya!
+        processedChats.sort((a, b) => {
+          const dateA = a.messages?.length > 0 ? a.messages[a.messages.length - 1].created_at : a.last_message_at;
+          const dateB = b.messages?.length > 0 ? b.messages[b.messages.length - 1].created_at : b.last_message_at;
+          return new Date(dateB).getTime() - new Date(dateA).getTime();
+        });
+        
+        setChats(processedChats);
 
         // Fetch user profiles for all participants
         const userIds = new Set<string>();
@@ -270,7 +285,11 @@ export default function ChatListScreen({
                             </div>
                           )}
                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {new Date(chat.last_message_at).toLocaleDateString('id-ID', {
+                            {new Date(
+                              chat.messages?.length > 0 
+                                ? chat.messages[chat.messages.length - 1].created_at 
+                                : chat.last_message_at
+                            ).toLocaleDateString('id-ID', {
                               day: 'numeric',
                               month: 'short',
                             })}

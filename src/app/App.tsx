@@ -146,7 +146,7 @@ function AppContent() {
     };
   }, [session]);
 
-  // Real-time unread message count
+  // JURUS SINKRONISASI NAVBAR: Dengerin INSERT & UPDATE Realtime
   useEffect(() => {
     if (!session?.user?.id) {
       setUnreadMessageCount(0);
@@ -154,20 +154,34 @@ function AppContent() {
       return;
     }
 
-    // Fetch initial count
-    const fetchUnreadCount = async () => {
+    const fetchTotalUnread = async () => {
       const count = await getUnreadMessageCount(session.user.id);
       setUnreadMessageCount(count);
       setHasUnreadMessages(count > 0);
     };
-    
-    fetchUnreadCount();
 
-    // Subscribe to real-time updates
-    const messageSubscription = subscribeToMessages(session.user.id, fetchUnreadCount);
+    fetchTotalUnread();
+
+    // LISTEN SETIAP PERUBAHAN DI TABEL MESSAGES
+    const channel = supabase
+      .channel('navbar-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Dengerin INSERT, UPDATE, dan DELETE sekaligus!
+          schema: 'public',
+          table: 'messages',
+          filter: `recipient_id=eq.${session.user.id}`
+        },
+        () => {
+          console.log("Ada perubahan pesan (Baru/Dibaca), update navbar!");
+          fetchTotalUnread();
+        }
+      )
+      .subscribe();
 
     return () => {
-      messageSubscription.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [session?.user?.id]);
 
@@ -651,7 +665,7 @@ function AppContent() {
                   onClick={() => {
                     if (session) {
                       setCurrentScreen('chat-list');
-                      setUnreadMessageCount(0); // <--- INI WAK KUNCI BIAR LANGSUNG HILANG
+                      // setUnreadMessageCount(0); // <--- INI WAK KUNCI BIAR LANGSUNG HILANG
                     } else {
                       setCurrentScreen('auth');
                     }

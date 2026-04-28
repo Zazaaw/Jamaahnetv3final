@@ -12,12 +12,43 @@ export default function ChatScreen({
   session: any;
   onBack: () => void;
 }) {
-  const [messages, setMessages] = useState(chat.messages || []);
+  // 1. MANTRA PERTAMA: Urutkan pesan berdasarkan waktu biar gak musuhan (kiri-kanan)
+  const [messages, setMessages] = useState(() => {
+    return [...(chat.messages || [])].sort((a: any, b: any) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+  });
+  
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [otherUser, setOtherUser] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // MANTRA KEDUA: Bikin notif angka merah hilang di database (Anti NULL)
+  useEffect(() => {
+    const markMessagesAsRead = async () => {
+      try {
+        const supabase = getSupabaseClient();
+        const { error } = await supabase
+          .from('messages')
+          .update({ is_read: true })
+          .eq('chat_id', chat.id)
+          .neq('sender_id', session.user.id); 
+          // JURUS SAKTI: Kita gak peduli recipient_id NULL, pokoknya semua pesan 
+          // yang BUKAN dikirim sama kita (neq sender_id), jadikan is_read = true!
+          
+        if (error) console.error("Gagal update read status:", error);
+      } catch (error) {
+        console.error('Gagal update is_read:', error);
+      }
+    };
+    
+    if (chat.id && session?.user?.id && messages.length > 0) {
+      markMessagesAsRead();
+    }
+  }, [chat.id, session?.user?.id, messages.length]);
+
+  // Ini bawaan aslimu, kubiarin aja
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -95,23 +126,29 @@ export default function ChatScreen({
     setLoading(true);
     try {
       const supabase = getSupabaseClient();
+      
+      // 1. Kirim Pesan ke tabel Messages
       const { data: message, error } = await supabase
         .from('messages')
         .insert({
           chat_id: chat.id,
           sender_id: session.user.id,
-          recipient_id: chat.participants.find((id: string) => id !== session.user.id), // TAMBAHKAN INI
+          recipient_id: chat.participants.find((id: string) => id !== session.user.id),
           text: newMessage
         })
         .select()
         .single();
 
-      if (error) {
-        console.error('Error sending message:', error);
-      } else {
-        setMessages([...messages, message]);
-        setNewMessage('');
-      }
+      if (error) throw error;
+
+      // 2. INI OBAT TANGGAL NYANGKUT: Update waktu terakhir di tabel Chats!
+      await supabase
+        .from('chats')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', chat.id);
+
+      setMessages([...messages, message]);
+      setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -121,11 +158,13 @@ export default function ChatScreen({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 dark:from-gray-950 dark:to-gray-900 flex flex-col">
-      {/* Header */}
+      
+      {/* 1. HEADER-NYA DIBIKIN FIXED BIAR LENGKET DI ATAS WAK! */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 text-white p-5 flex items-center gap-4 shadow-lg"
+        // Tambahin fixed, top-0, left-0, right-0, z-50
+        className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 text-white p-4 sm:p-5 flex items-center gap-4 shadow-lg"
       >
         <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-xl transition-colors">
           <ArrowLeft className="w-6 h-6" />
@@ -151,8 +190,8 @@ export default function ChatScreen({
         </div>
       </motion.div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-28">
+      {/* 2. MESSAGES-NYA DIKASIH PADDING-TOP (pt-24) BIAR GAK KETIMPA HEADER */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 pt-24 pb-28">
         {messages.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
