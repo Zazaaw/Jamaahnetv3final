@@ -6,21 +6,18 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 serve(async (req) => {
-  // 1. Logging awal biar kita tau ada paket masuk
   console.log("Ada paket masuk dari Webhook wak!");
 
   try {
     const payload = await req.json();
     const message = payload.record;
 
-    // 2. Baca Secret di dalam try-catch
     const rawAccount = Deno.env.get('FIREBASE_SERVICE_ACCOUNT');
     if (!rawAccount) throw new Error("Secret FIREBASE_SERVICE_ACCOUNT nggak ketemu wak!");
     
     const FIREBASE_SERVICE_ACCOUNT = JSON.parse(rawAccount);
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 3. Ambil Profile (Penerima & Pengirim)
     const { data: recipient } = await supabase
       .from('profiles')
       .select('push_token')
@@ -32,10 +29,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, msg: "No token" }));
     }
 
-    // 4. Generate Token & Kirim
     const client = new JWT({
       email: FIREBASE_SERVICE_ACCOUNT.client_email,
-      // JURUS SAKTI: Mastiin \n dibaca sebagai newline beneran, bukan teks "\n"
       key: FIREBASE_SERVICE_ACCOUNT.private_key.replace(/\\n/g, '\n'),
       scopes: ['https://www.googleapis.com/auth/cloud-platform'],
     });
@@ -51,8 +46,12 @@ serve(async (req) => {
       body: JSON.stringify({
         message: {
           token: recipient.push_token,
-          notification: { title: "Pesan Baru", body: message.text.substring(0, 100)) },
-          data: { chatId: message.chat_id, type: 'message' }
+          notification: { 
+            title: "Pesan Baru", 
+            // FIX: Hapus ekstra kurung & tambah fallback kalau kirim gambar doang
+            body: (message.text || 'Mengirim lampiran/gambar').substring(0, 100) 
+          },
+          data: { chatId: message.chat_id || '', type: 'message' }
         }
       }),
     });
@@ -61,7 +60,7 @@ serve(async (req) => {
     console.log("Hasil Tembakan FCM:", result);
     return new Response(JSON.stringify(result), { status: 200 });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("ERROR NYA INI WAK:", error.message);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
