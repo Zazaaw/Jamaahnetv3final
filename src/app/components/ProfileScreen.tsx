@@ -11,7 +11,6 @@ import { useLanguage } from '../utils/LanguageContext';
 import { toPng } from 'html-to-image';
 import { toast } from 'sonner@2.0.3';
 import { BlurFade } from './magicui/blur-fade';
-import { createPortal } from 'react-dom';
 
 interface Profile {
   id: string;
@@ -655,162 +654,159 @@ export default function ProfileScreen({
         )}
       </AnimatePresence>
 
-      {/* Settings Menu - JURUS PORTAL SSR AMAN! */}
-      {isMounted && createPortal(
-        <AnimatePresence>
-          {showSettingsMenu && (
-            <div className="fixed inset-0 z-[999999] pointer-events-auto">
-              {/* Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setShowSettingsMenu(false)}
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              />
+      {/* Settings Menu - VERSI ORIGINAL + KASTA DEWA BIAR NUTUP NAVBAR */}
+      <AnimatePresence>
+        {showSettingsMenu && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSettingsMenu(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99998]"
+            />
 
-              {/* Menu Panel */}
-              <motion.div
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                className="absolute top-0 right-0 bottom-0 h-full w-full max-w-sm bg-white dark:bg-gray-900 shadow-2xl flex flex-col"
-              >
-                {/* Header */}
-                <div className="flex-none bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white pb-6 pt-safe">
-                  <div className="flex items-center justify-between mb-4 mt-2">
-                    <h2 className="text-2xl font-bold">Pengaturan</h2>
-                    <motion.button
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setShowSettingsMenu(false)}
-                      className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center"
-                    >
-                      <X className="w-5 h-5" />
-                    </motion.button>
-                  </div>
-                  <p className="text-white/80 text-sm">Kelola akun dan preferensi Anda</p>
-                </div>
-
-                {/* Menu Items - flex-1 dan overflow-y-auto biar isinya doang yang scroll! */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-12">
-                  
-                  {/* Dark Mode Toggle */}
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4"
-                  >
-                    <button
-                      onClick={onToggleDarkMode}
-                      className="w-full flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-xl">
-                          {darkMode ? (
-                            <Moon className="w-5 h-5 text-white" />
-                          ) : (
-                            <Sun className="w-5 h-5 text-white" />
-                          )}
-                        </div>
-                        <div className="text-left">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">Mode Gelap</h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {darkMode ? 'Aktif' : 'Nonaktif'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className={`w-12 h-6 rounded-full transition-colors ${
-                        darkMode ? 'bg-purple-600' : 'bg-gray-300'
-                      } relative`}>
-                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                          darkMode ? 'translate-x-6' : ''
-                        }`} />
-                      </div>
-                    </button>
-                  </motion.div>
-
-                  {/* Connections */}
-                  <SettingsMenuItem
-                    icon={Users}
-                    title="Koneksi"
-                    subtitle="Kelola koneksi Anda"
-                    gradient="from-blue-500 to-indigo-500"
-                    onClick={() => {
-                      setShowSettingsMenu(false);
-                      onNavigate('connections');
-                    }}
-                    delay={0.2}
-                  />
-
-                  {/* Change Password */}
-                  <SettingsMenuItem
-                    icon={Lock}
-                    title="Ganti Password"
-                    subtitle="Ubah password Anda"
-                    gradient="from-red-500 to-pink-500"
-                    onClick={() => {
-                      setShowSettingsMenu(false);
-                      setShowChangePasswordModal(true);
-                    }}
-                    delay={0.3}
-                  />
-
-                  {/* Admin Dashboard */}
-                  {profile?.role === 'Admin' && (
-                    <SettingsMenuItem
-                      icon={Shield}
-                      title="Admin Dashboard"
-                      subtitle="Kelola platform jamaah.net"
-                      gradient="from-amber-500 to-orange-500"
-                      onClick={() => {
-                        setShowSettingsMenu(false);
-                        onNavigate('admin-dashboard');
-                      }}
-                      delay={0.4}
-                    />
-                  )}
-
-                  {/* Dashboard Ekonomi */}
-                  <SettingsMenuItem
-                    icon={TrendingUp}
-                    title="Dashboard Ekonomi"
-                    subtitle="Pusat Komando Bisnis"
-                    gradient="from-emerald-500 to-teal-500"
-                    onClick={() => {
-                      setShowSettingsMenu(false);
-                      onNavigate('business-dashboard');
-                    }}
-                    delay={0.45}
-                    isHighlighted={true}
-                  />
-
-                  {/* Logout */}
+            {/* Menu Panel - Balik ke bentuk awal, cuma tambah z-[99999] */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="fixed top-0 right-0 bottom-0 w-full max-w-sm bg-white dark:bg-gray-900 z-[99999] shadow-2xl overflow-y-auto"
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white pb-6 pt-safe">
+                <div className="flex items-center justify-between mb-4 mt-2">
+                  <h2 className="text-2xl font-bold">Pengaturan</h2>
                   <motion.button
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: profile?.role === 'Admin' ? 0.5 : 0.45 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={onLogout}
-                    className="w-full bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 flex items-center gap-3 border-2 border-red-200 dark:border-red-800 mt-4 mb-8"
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setShowSettingsMenu(false)}
+                    className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center"
                   >
-                    <div className="bg-gradient-to-br from-red-500 to-pink-500 p-3 rounded-xl">
-                      <LogOut className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="text-left flex-1">
-                      <h3 className="font-semibold text-red-600 dark:text-red-400">Keluar</h3>
-                      <p className="text-xs text-red-500 dark:text-red-400/80">Logout dari akun</p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-red-400" />
+                    <X className="w-5 h-5" />
                   </motion.button>
                 </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
+                <p className="text-white/80 text-sm">Kelola akun dan preferensi Anda</p>
+              </div>
+
+              {/* Menu Items - Balik ke struktur asli, cuma kutambahin pb-32 biar aman */}
+              <div className="p-4 space-y-2 pb-32">
+                
+                {/* Dark Mode Toggle */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4"
+                >
+                  <button
+                    onClick={onToggleDarkMode}
+                    className="w-full flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-xl">
+                        {darkMode ? (
+                          <Moon className="w-5 h-5 text-white" />
+                        ) : (
+                          <Sun className="w-5 h-5 text-white" />
+                        )}
+                      </div>
+                      <div className="text-left">
+                        <h3 className="font-semibold text-gray-900 dark:text-white">Mode Gelap</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {darkMode ? 'Aktif' : 'Nonaktif'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`w-12 h-6 rounded-full transition-colors ${
+                      darkMode ? 'bg-purple-600' : 'bg-gray-300'
+                    } relative`}>
+                      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                        darkMode ? 'translate-x-6' : ''
+                      }`} />
+                    </div>
+                  </button>
+                </motion.div>
+
+                {/* Connections */}
+                <SettingsMenuItem
+                  icon={Users}
+                  title="Koneksi"
+                  subtitle="Kelola koneksi Anda"
+                  gradient="from-blue-500 to-indigo-500"
+                  onClick={() => {
+                    setShowSettingsMenu(false);
+                    onNavigate('connections');
+                  }}
+                  delay={0.2}
+                />
+
+                {/* Change Password */}
+                <SettingsMenuItem
+                  icon={Lock}
+                  title="Ganti Password"
+                  subtitle="Ubah password Anda"
+                  gradient="from-red-500 to-pink-500"
+                  onClick={() => {
+                    setShowSettingsMenu(false);
+                    setShowChangePasswordModal(true);
+                  }}
+                  delay={0.3}
+                />
+
+                {/* Admin Dashboard */}
+                {profile?.role === 'Admin' && (
+                  <SettingsMenuItem
+                    icon={Shield}
+                    title="Admin Dashboard"
+                    subtitle="Kelola platform jamaah.net"
+                    gradient="from-amber-500 to-orange-500"
+                    onClick={() => {
+                      setShowSettingsMenu(false);
+                      onNavigate('admin-dashboard');
+                    }}
+                    delay={0.4}
+                  />
+                )}
+
+                {/* Dashboard Ekonomi */}
+                <SettingsMenuItem
+                  icon={TrendingUp}
+                  title="Dashboard Ekonomi"
+                  subtitle="Pusat Komando Bisnis"
+                  gradient="from-emerald-500 to-teal-500"
+                  onClick={() => {
+                    setShowSettingsMenu(false);
+                    onNavigate('business-dashboard');
+                  }}
+                  delay={0.45}
+                  isHighlighted={true}
+                />
+
+                {/* Logout */}
+                <motion.button
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: profile?.role === 'Admin' ? 0.5 : 0.45 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={onLogout}
+                  className="w-full bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 flex items-center gap-3 border-2 border-red-200 dark:border-red-800 mt-4"
+                >
+                  <div className="bg-gradient-to-br from-red-500 to-pink-500 p-3 rounded-xl">
+                    <LogOut className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="text-left flex-1">
+                    <h3 className="font-semibold text-red-600 dark:text-red-400">Keluar</h3>
+                    <p className="text-xs text-red-500 dark:text-red-400/80">Logout dari akun</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-red-400" />
+                </motion.button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Edit Profile Modal */}
       {showEditModal && (
