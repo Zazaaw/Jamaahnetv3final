@@ -111,8 +111,10 @@ const triageSummary = [
 
 export default function DashboardTab({
   onNavigate,
+  userName = "Member" // <-- Kasih default biar aman
 }: {
   onNavigate: (t: TabId) => void;
+  userName?: string; // <-- Tambahin tipe datanya di sini
 }) {
   return (
     <div className="dash">
@@ -120,7 +122,8 @@ export default function DashboardTab({
       <header className="dash-header anim-fade">
         <div className="dash-header-left">
           <p className="dash-greeting">Selamat Datang,</p>
-          <h1 className="dash-name">Admin Hidayatullah</h1>
+          {/* TAMPILIN NAMANYA DI SINI WAK! */}
+          <h1 className="dash-name">{userName}</h1> 
         </div>
         <div className="dash-header-right">
           <button className="header-icon-btn" aria-label="Search">

@@ -787,8 +787,7 @@ export default function ProfileScreen({
                   />
                 )}
 
-                {/* Dashboard Ekonomi (Aggregator) - Khusus Divisi Ekonomi / Admin / User dengan ID EK- 
-                {(profile?.role === 'Admin' || profile?.role === 'Divisi Ekonomi' || profile?.member_id?.startsWith('EK-')) && (
+                {/* Dashboard Ekonomi (Aggregator) - Khusus Divisi Ekonomi / Admin / User dengan ID EK- */}
                   <SettingsMenuItem
                     icon={TrendingUp}
                     title="Dashboard Ekonomi"
@@ -801,8 +800,7 @@ export default function ProfileScreen({
                     delay={0.45}
                     isHighlighted={true}
                   />
-                )}
-                  */}
+                  
 
                 {/* Logout */}
                 <motion.button
