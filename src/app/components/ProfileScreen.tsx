@@ -652,26 +652,26 @@ export default function ProfileScreen({
       <AnimatePresence>
         {showSettingsMenu && (
           <>
-            {/* Backdrop */}
+            {/* Backdrop - Kasta dinaikkan jadi 9998 biar nutupin navbar */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowSettingsMenu(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998]"
             />
 
-            {/* Menu Panel */}
+            {/* Menu Panel - Kasta Dewa 10000, ubah jadi flex flex-col */}
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="fixed top-0 right-0 bottom-0 w-full max-w-sm bg-white dark:bg-gray-900 z-50 shadow-2xl overflow-y-auto"
+              className="fixed top-0 right-0 bottom-0 h-[100dvh] w-full max-w-sm bg-white dark:bg-gray-900 z-[10000] shadow-2xl flex flex-col"
             >
-              {/* Header */}
-              <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white">
-                <div className="flex items-center justify-between mb-4">
+              {/* Header - Dikasih flex-none biar nempel anteng di atas */}
+              <div className="flex-none bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white pb-6 pt-safe">
+                <div className="flex items-center justify-between mb-4 mt-2">
                   <h2 className="text-2xl font-bold">Pengaturan</h2>
                   <motion.button
                     whileTap={{ scale: 0.9 }}
@@ -684,8 +684,9 @@ export default function ProfileScreen({
                 <p className="text-white/80 text-sm">Kelola akun dan preferensi Anda</p>
               </div>
 
-              {/* Menu Items */}
-              <div className="p-4 space-y-2">
+              {/* Menu Items - Dikasih flex-1 overflow-y-auto biar INI DOANG yang bisa di-scroll */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-12">
+                
                 {/* Dark Mode Toggle */}
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
@@ -735,7 +736,7 @@ export default function ProfileScreen({
                   delay={0.2}
                 />
 
-                {/* Wallet */}
+                {/* Wallet 
                 <SettingsMenuItem
                   icon={Wallet}
                   title="Dompet Digital"
@@ -747,7 +748,7 @@ export default function ProfileScreen({
                   delay={0.25}
                 />
 
-                {/* History */}
+                {/* History 
                 <SettingsMenuItem
                   icon={History}
                   title="Histori Transaksi"
@@ -757,7 +758,7 @@ export default function ProfileScreen({
                     setShowSettingsMenu(false);
                   }}
                   delay={0.3}
-                />
+                /> */}
 
                 {/* Change Password */}
                 <SettingsMenuItem
@@ -787,20 +788,19 @@ export default function ProfileScreen({
                   />
                 )}
 
-                {/* Dashboard Ekonomi (Aggregator) - Khusus Divisi Ekonomi / Admin / User dengan ID EK- */}
-                  <SettingsMenuItem
-                    icon={TrendingUp}
-                    title="Dashboard Ekonomi"
-                    subtitle="Pusat Komando Bisnis (Aggregator)"
-                    gradient="from-emerald-500 to-teal-500"
-                    onClick={() => {
-                      setShowSettingsMenu(false);
-                      onNavigate('business-dashboard');
-                    }}
-                    delay={0.45}
-                    isHighlighted={true}
-                  />
-                  
+                {/* Dashboard Ekonomi (Aggregator) - Khusus Divisi Ekonomi / Admin */}
+                <SettingsMenuItem
+                  icon={TrendingUp}
+                  title="Dashboard Ekonomi"
+                  subtitle="Pusat Komando Bisnis (Aggregator)"
+                  gradient="from-emerald-500 to-teal-500"
+                  onClick={() => {
+                    setShowSettingsMenu(false);
+                    onNavigate('business-dashboard');
+                  }}
+                  delay={0.45}
+                  isHighlighted={true}
+                />
 
                 {/* Logout */}
                 <motion.button
