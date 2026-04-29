@@ -53,6 +53,12 @@ export default function ProfileScreen({
   const [isOfficialMode, setIsOfficialMode] = useState(false);
   const [totalConnections, setTotalConnections] = useState(0);
   
+  // MANTRA BARU: Biar portalnya nunggu layar siap dulu
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
   const supabase = getSupabaseClient();
 
   const fetchConnectionCount = async () => {
@@ -649,11 +655,11 @@ export default function ProfileScreen({
         )}
       </AnimatePresence>
 
-      {/* Settings Menu - JURUS PORTAL TELEPORTASI BIAR GAK KETIMPA! */}
-      {createPortal(
+      {/* Settings Menu - JURUS PORTAL SSR AMAN! */}
+      {isMounted && createPortal(
         <AnimatePresence>
           {showSettingsMenu && (
-            <div className="fixed inset-0 z-[99999] isolate" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0 }}>
+            <div className="fixed inset-0 z-[999999] pointer-events-auto">
               {/* Backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
@@ -663,15 +669,15 @@ export default function ProfileScreen({
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               />
 
-              {/* Menu Panel - flex-col dan h-[100dvh] kunci biar ga scroll bablas */}
+              {/* Menu Panel */}
               <motion.div
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                className="absolute top-0 right-0 bottom-0 h-[100dvh] w-full max-w-sm bg-white dark:bg-gray-900 shadow-2xl flex flex-col"
+                className="absolute top-0 right-0 bottom-0 h-full w-full max-w-sm bg-white dark:bg-gray-900 shadow-2xl flex flex-col"
               >
-                {/* Header - flex-none biar nempel permanen di atas */}
+                {/* Header */}
                 <div className="flex-none bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white pb-6 pt-safe">
                   <div className="flex items-center justify-between mb-4 mt-2">
                     <h2 className="text-2xl font-bold">Pengaturan</h2>
@@ -738,31 +744,6 @@ export default function ProfileScreen({
                     delay={0.2}
                   />
 
-                  {/* Wallet 
-                  <SettingsMenuItem
-                    icon={Wallet}
-                    title="Dompet Digital"
-                    subtitle={formatPrice(profile?.wallet_balance || 0)}
-                    gradient="from-green-500 to-emerald-500"
-                    onClick={() => {
-                      setShowSettingsMenu(false);
-                    }}
-                    delay={0.25}
-                  />
-
-                  {/* History
-                  <SettingsMenuItem
-                    icon={History}
-                    title="Histori Transaksi"
-                    subtitle="Riwayat transaksi"
-                    gradient="from-orange-500 to-red-500"
-                    onClick={() => {
-                      setShowSettingsMenu(false);
-                    }}
-                    delay={0.3}
-                  />
-                   */}
-
                   {/* Change Password */}
                   <SettingsMenuItem
                     icon={Lock}
@@ -812,7 +793,7 @@ export default function ProfileScreen({
                     transition={{ delay: profile?.role === 'Admin' ? 0.5 : 0.45 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={onLogout}
-                    className="w-full bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 flex items-center gap-3 border-2 border-red-200 dark:border-red-800 mt-4"
+                    className="w-full bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 flex items-center gap-3 border-2 border-red-200 dark:border-red-800 mt-4 mb-8"
                   >
                     <div className="bg-gradient-to-br from-red-500 to-pink-500 p-3 rounded-xl">
                       <LogOut className="w-5 h-5 text-white" />
