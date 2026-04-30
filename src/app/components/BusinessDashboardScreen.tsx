@@ -85,7 +85,7 @@ export default function BusinessDashboardScreen({
 
       {/* Konten Tab Original Om + Tab Baru */}
       <div className="app-container" style={{ paddingBottom: 'calc(var(--nav-height) + 20px)' }}>
-        {activeTab === "dashboard" && <DashboardTab onNavigate={setActiveTab as any} userName={userName} />}
+        {activeTab === "dashboard" && <DashboardTab onNavigate={setActiveTab as any} userName={userName} userRole={userRole} />}
         {activeTab === "entities" && <PortfolioTab />}
         {activeTab === "map" && <MapTab />}
 
