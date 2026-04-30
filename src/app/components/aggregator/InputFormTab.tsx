@@ -1,354 +1,212 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  FilePlus,
-  Building2,
-  Briefcase,
-  FileText,
-  DollarSign,
-  TrendingUp,
-  MapPin,
-  User,
-  Phone,
-  Users,
-  Cog,
-  Gem,
-  Target,
-  RotateCcw,
-  Send,
-  CheckCircle2,
-} from "lucide-react";
-import "./InputFormTab.css";
+import { Save, CheckCircle2, TrendingUp, Target, Handshake, AlertCircle, Loader2, ChevronRight } from "lucide-react";
+import { getSupabaseClient } from "../../utils/supabase/client"; 
+import { toast } from "sonner@2.0.3";
+import "./DashboardTab.css"; // Minjam CSS dari dashboard biar seragam
 
-const sectorOptions = ["Tech", "F&B", "Retail", "Service", "Manufaktur", "Lainnya"];
+export default function InputFormTab({ session }: { session?: any }) {
+  const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const supabase = getSupabaseClient();
 
-export default function InputFormTab() {
-  const [submitted, setSubmitted] = useState(false);
-  const [bmcScore, setBmcScore] = useState(50);
-
-  const [form, setForm] = useState({
-    name: "",
-    sector: "",
-    description: "",
-    revenue: "",
-    growth: "",
-    location: "",
-    owner: "",
-    contact: "",
-    keyPartners: "",
-    keyActivities: "",
-    valuePropositions: "",
-    customerSegments: "",
+  // State nampung isian form
+  const [formData, setFormData] = useState({
+    business_name: "",
+    sector: "F&B",
+    monthly_revenue: "",
+    growth_rate: 0,
+    bmc_score: 50, // Nilai default tengah-tengah
+    needs: "", // Apa yang dicari/dibutuhkan
+    offers: "" // Apa yang bisa dikolaborasikan/ditawarkan
   });
 
-  const handleChange = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: parseInt(e.target.value) });
   };
 
-  const handleReset = () => {
-    setForm({
-      name: "",
-      sector: "",
-      description: "",
-      revenue: "",
-      growth: "",
-      location: "",
-      owner: "",
-      contact: "",
-      keyPartners: "",
-      keyActivities: "",
-      valuePropositions: "",
-      customerSegments: "",
-    });
-    setBmcScore(50);
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session?.user?.id) {
+      toast.error("Sesi tidak ditemukan, silakan login ulang.");
+      return;
+    }
 
-  if (submitted) {
-    return (
-      <div className="input-form">
-        <div className="success-screen anim-scale">
-          <div className="success-icon-wrap">
-            <CheckCircle2 size={48} />
-          </div>
-          <h2 className="success-title">Data Berhasil Dikirim!</h2>
-          <p className="success-sub">
-            Data bisnis dan BMC akan segera diproses oleh sistem aggregator.
-          </p>
-        </div>
-      </div>
-    );
-  }
+    setIsSubmitting(true);
+    
+    try {
+      // Siapin data buat dikirim ke Supabase
+      const payload = {
+        owner_id: session.user.id,
+        business_name: formData.business_name,
+        sector: formData.sector,
+        monthly_revenue: parseFloat(formData.monthly_revenue.replace(/[^0-9.-]+/g,"")) || 0,
+        growth_rate: formData.growth_rate,
+        bmc_score: formData.bmc_score,
+        bmc_details: {
+          needs: formData.needs,
+          offers: formData.offers
+        },
+        health_status: formData.bmc_score > 75 ? 'Golden Opportunity' : formData.bmc_score < 40 ? 'Urgent Review' : 'Strategic Expansion'
+      };
+
+      const { error } = await supabase
+        .from('business_entities')
+        .insert([payload]);
+
+      if (error) throw error;
+
+      toast.success("Data Bisnis berhasil dikirim ke Pusat Komando!");
+      setStep(4); // Langsung lempar ke layar sukses
+    } catch (error: any) {
+      console.error("Error submitting data:", error);
+      toast.error("Gagal mengirim data. Coba lagi nanti.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <div className="input-form">
-      <header className="form-header anim-fade">
-        <div>
-          <h1 className="form-title">Input Data</h1>
-          <p className="form-subtitle">Formulir Data Bisnis & BMC</p>
-        </div>
-        <div className="form-header-icon">
-          <FilePlus size={22} />
-        </div>
-      </header>
+    <div className="dash" style={{ padding: '20px', paddingBottom: '100px' }}>
+      <div className="section-head anim-fade">
+        <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>Update Data Bisnis</h2>
+      </div>
+      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
+        Lengkapi profil bisnis Anda untuk mendapatkan rekomendasi dan peluang sinergi dari Aggregator Jamaah.
+      </p>
 
-      {/* Business Data Section */}
-      <section className="form-section anim-slide d1">
-        <div className="form-section-head">
-          <Building2 size={16} />
-          <h3>Data Bisnis</h3>
-        </div>
+      {/* Stepper Indicator */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '32px', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '12px', left: '10%', right: '10%', height: '2px', background: 'var(--border-subtle)', zIndex: 0 }} />
+        <div style={{ position: 'absolute', top: '12px', left: '10%', right: '10%', height: '2px', background: 'var(--accent-primary)', zIndex: 0, width: step >= 2 ? (step >= 3 ? '80%' : '40%') : '0%', transition: 'width 0.3s' }} />
+        
+        {[
+          { num: 1, icon: <TrendingUp size={14} />, label: "Finansial" },
+          { num: 2, icon: <Target size={14} />, label: "Status BMC" },
+          { num: 3, icon: <Handshake size={14} />, label: "Sinergi" }
+        ].map((s) => (
+          <div key={s.num} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 1, gap: '8px' }}>
+            <div style={{ 
+              width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              background: step >= s.num ? 'var(--accent-primary)' : 'var(--bg-card)', 
+              color: step >= s.num ? 'white' : 'var(--text-secondary)',
+              border: `2px solid ${step >= s.num ? 'var(--accent-primary)' : 'var(--border-subtle)'}`,
+              transition: 'all 0.3s'
+            }}>
+              {s.icon}
+            </div>
+            <span style={{ fontSize: '10px', fontWeight: step >= s.num ? 'bold' : 'normal', color: step >= s.num ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{s.label}</span>
+          </div>
+        ))}
+      </div>
 
-        <div className="form-group">
-          <label className="form-label">
-            <Briefcase size={14} />
-            Nama Bisnis / Entitas
-          </label>
-          <input
-            type="text"
-            className="form-input"
-            placeholder="Contoh: TechFlow Solutions"
-            value={form.name}
-            onChange={(e) => handleChange("name", e.target.value)}
-          />
-        </div>
+      {/* Konten Form */}
+      <div className="card anim-slide" style={{ padding: '24px' }}>
+        {step === 4 ? (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <CheckCircle2 size={48} style={{ color: '#10b981', margin: '0 auto 16px' }} />
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>Data Terkirim!</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+              Terima kasih. Sistem Aggregator sedang memproses data Anda untuk mencari peluang sinergi dan rekomendasi upscaling yang cocok.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={step === 3 ? handleSubmit : (e) => { e.preventDefault(); setStep(step + 1); }}>
+            
+            {/* STEP 1: PROFIL & FINANSIAL */}
+            {step === 1 && (
+              <div className="space-y-4 anim-fade">
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px' }}>Nama Unit Bisnis</label>
+                  <input required type="text" name="business_name" value={formData.business_name} onChange={handleChange} placeholder="Contoh: Kopi Kenangan Senja" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px' }}>Sektor Industri</label>
+                  <select name="sector" value={formData.sector} onChange={handleChange} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none' }}>
+                    <option value="F&B">F&B (Makanan & Minuman)</option>
+                    <option value="Retail">Retail & Perdagangan</option>
+                    <option value="Jasa">Jasa & Pelayanan</option>
+                    <option value="Tech">Teknologi & Digital</option>
+                    <option value="Agrikultur">Agrikultur & Peternakan</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px' }}>Rata-rata Omset Bulanan (Rp)</label>
+                  <input required type="number" name="monthly_revenue" value={formData.monthly_revenue} onChange={handleChange} placeholder="Contoh: 15000000" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px' }}>Pertumbuhan YoY (%)</label>
+                  <p style={{ fontSize: '10px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Seberapa besar bisnis Anda tumbuh dibanding tahun lalu? (Bisa minus jika turun)</p>
+                  <input required type="number" name="growth_rate" value={formData.growth_rate} onChange={handleChange} placeholder="Contoh: 15" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none' }} />
+                </div>
+              </div>
+            )}
 
-        <div className="form-group">
-          <label className="form-label">
-            <FileText size={14} />
-            Sektor
-          </label>
-          <div className="sector-chips">
-            {sectorOptions.map((s) => (
-              <button
-                key={s}
-                className={`sector-chip ${form.sector === s ? "active" : ""}`}
-                onClick={() => handleChange("sector", s)}
-                type="button"
-              >
-                {s}
+            {/* STEP 2: PENILAIAN BMC */}
+            {step === 2 && (
+              <div className="space-y-4 anim-fade">
+                <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '12px', borderRadius: '12px', display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                  <AlertCircle size={20} style={{ color: 'var(--amber)', flexShrink: 0 }} />
+                  <p style={{ fontSize: '11px', color: 'var(--amber)', lineHeight: '1.4' }}>
+                    Penilaian Business Model Canvas (BMC) membantu pusat melihat ketahanan bisnis Anda. Geser slider sesuai dengan kondisi real bisnis Anda saat ini.
+                  </p>
+                </div>
+
+                <div>
+                  <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px' }}>
+                    <span>Skor Kekuatan BMC</span>
+                    <span style={{ color: 'var(--accent-primary)' }}>{formData.bmc_score} / 100</span>
+                  </label>
+                  <input type="range" name="bmc_score" min="0" max="100" value={formData.bmc_score} onChange={handleSliderChange} style={{ width: '100%', accentColor: 'var(--accent-primary)' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '10px', color: 'var(--text-secondary)' }}>
+                    <span>Lemah (Butuh Bantuan)</span>
+                    <span>Sangat Kuat (Skala Nasional)</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: SINERGI */}
+            {step === 3 && (
+              <div className="space-y-4 anim-fade">
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px' }}>Kebutuhan Bisnis (Needs)</label>
+                  <p style={{ fontSize: '10px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Apa yang paling bisnis Anda butuhkan saat ini? (Modal, Supplier, Mentor, dll)</p>
+                  <textarea required name="needs" value={formData.needs} onChange={handleChange} rows={3} placeholder="Kami sedang mencari supplier bahan baku organik yang konsisten..." style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none', resize: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px' }}>Penawaran Kolaborasi (Offers)</label>
+                  <p style={{ fontSize: '10px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Apa yang bisnis Anda bisa tawarkan ke jaringan Jamaah?</p>
+                  <textarea required name="offers" value={formData.offers} onChange={handleChange} rows={3} placeholder="Kami siap menerima maklon produksi dengan kapasitas 1000 pcs/hari..." style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none', resize: 'none' }} />
+                </div>
+              </div>
+            )}
+
+            {/* Navigasi Bawah */}
+            <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
+              {step > 1 && (
+                <button type="button" onClick={() => setStep(step - 1)} style={{ flex: 1, padding: '12px', borderRadius: '24px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-primary)', fontSize: '12px', fontWeight: 'bold' }}>
+                  Kembali
+                </button>
+              )}
+              
+              <button type="submit" disabled={isSubmitting} style={{ flex: 2, padding: '12px', borderRadius: '24px', background: 'var(--accent-primary)', color: 'white', fontSize: '12px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', border: 'none' }}>
+                {isSubmitting ? (
+                  <><Loader2 size={16} className="animate-spin" /> Memproses...</>
+                ) : step === 3 ? (
+                  <><Save size={16} /> Simpan Data</>
+                ) : (
+                  <>Selanjutnya <ChevronRight size={16} /></>
+                )}
               </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">
-            <FileText size={14} />
-            Deskripsi Singkat
-          </label>
-          <textarea
-            className="form-textarea"
-            placeholder="Jelaskan secara singkat model bisnis..."
-            rows={3}
-            value={form.description}
-            onChange={(e) => handleChange("description", e.target.value)}
-          />
-        </div>
-
-        <div className="form-row">
-          <div className="form-group">
-            <label className="form-label">
-              <DollarSign size={14} />
-              Revenue (YoY)
-            </label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="Rp 0M"
-              value={form.revenue}
-              onChange={(e) => handleChange("revenue", e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label">
-              <TrendingUp size={14} />
-              Growth Rate (%)
-            </label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="0%"
-              value={form.growth}
-              onChange={(e) => handleChange("growth", e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">
-            <MapPin size={14} />
-            Lokasi
-          </label>
-          <input
-            type="text"
-            className="form-input"
-            placeholder="Jakarta, Indonesia"
-            value={form.location}
-            onChange={(e) => handleChange("location", e.target.value)}
-          />
-        </div>
-
-        <div className="form-row">
-          <div className="form-group">
-            <label className="form-label">
-              <User size={14} />
-              Nama Owner
-            </label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="Nama lengkap"
-              value={form.owner}
-              onChange={(e) => handleChange("owner", e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label">
-              <Phone size={14} />
-              Nomor Kontak
-            </label>
-            <input
-              type="tel"
-              className="form-input"
-              placeholder="08xx-xxxx-xxxx"
-              value={form.contact}
-              onChange={(e) => handleChange("contact", e.target.value)}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* BMC Data Section */}
-      <section className="form-section anim-slide d2">
-        <div className="form-section-head">
-          <Cog size={16} />
-          <h3>BMC Data</h3>
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">
-            <Users size={14} />
-            Key Partners
-          </label>
-          <textarea
-            className="form-textarea"
-            placeholder="Mitra utama bisnis Anda..."
-            rows={2}
-            value={form.keyPartners}
-            onChange={(e) => handleChange("keyPartners", e.target.value)}
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">
-            <Cog size={14} />
-            Key Activities
-          </label>
-          <textarea
-            className="form-textarea"
-            placeholder="Aktivitas kunci yang dijalankan..."
-            rows={2}
-            value={form.keyActivities}
-            onChange={(e) => handleChange("keyActivities", e.target.value)}
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">
-            <Gem size={14} />
-            Value Propositions
-          </label>
-          <textarea
-            className="form-textarea"
-            placeholder="Nilai unik yang ditawarkan..."
-            rows={2}
-            value={form.valuePropositions}
-            onChange={(e) => handleChange("valuePropositions", e.target.value)}
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">
-            <Target size={14} />
-            Customer Segments
-          </label>
-          <textarea
-            className="form-textarea"
-            placeholder="Segmen pelanggan target..."
-            rows={2}
-            value={form.customerSegments}
-            onChange={(e) => handleChange("customerSegments", e.target.value)}
-          />
-        </div>
-      </section>
-
-      {/* BMC Readiness Score */}
-      <section className="form-section anim-slide d3">
-        <div className="form-section-head">
-          <Target size={16} />
-          <h3>BMC Readiness Score</h3>
-        </div>
-
-        <div className="bmc-slider-wrap">
-          <p className="bmc-slider-label">Self Assessment</p>
-          <div className="bmc-slider-display">
-            <span
-              className="bmc-slider-value"
-              style={{
-                color:
-                  bmcScore >= 80
-                    ? "#34d399"
-                    : bmcScore >= 60
-                    ? "#fbbf24"
-                    : "#f87171",
-              }}
-            >
-              {bmcScore}
-            </span>
-            <span className="bmc-slider-max">/ 100</span>
-          </div>
-          <input
-            type="range"
-            min={1}
-            max={100}
-            value={bmcScore}
-            onChange={(e) => setBmcScore(Number(e.target.value))}
-            className="bmc-slider"
-            style={{
-              // @ts-expect-error CSS custom property
-              "--slider-pct": `${bmcScore}%`,
-              "--slider-color":
-                bmcScore >= 80
-                  ? "#10b981"
-                  : bmcScore >= 60
-                  ? "#f59e0b"
-                  : "#ef4444",
-            }}
-          />
-          <div className="bmc-slider-labels">
-            <span>Rendah</span>
-            <span>Sedang</span>
-            <span>Tinggi</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Buttons */}
-      <div className="form-actions anim-slide d4">
-        <button className="btn-reset" onClick={handleReset} type="button">
-          <RotateCcw size={16} />
-          Reset
-        </button>
-        <button className="btn-submit" onClick={handleSubmit} type="button">
-          <Send size={16} />
-          Submit Data
-        </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
