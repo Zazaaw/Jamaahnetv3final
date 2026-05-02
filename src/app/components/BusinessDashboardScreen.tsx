@@ -66,7 +66,7 @@ export default function BusinessDashboardScreen({
         {/* Bagian Kiri: Judul */}
         <div>
           <p style={{ fontSize: '10px', color: 'var(--accent-primary)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '2px', margin: 0 }}>
-            {(userRole === 'aggregator_it' || userRole === 'admin') ? 'Pusat Komando Admin' : userRole === 'aggregator_member' ? 'Dashboard Bisnis' : 'Direktori Ekonomi'}
+            {(userRole === 'aggregator_it' || userRole === 'admin') ? 'Pusat Komando Admin' : userRole === 'aggregator_member' ? 'Business Aggregator' : 'Business Aggregator'}
           </p>
           <h1 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>
             {activeTab.replace('-', ' ').toUpperCase()}
