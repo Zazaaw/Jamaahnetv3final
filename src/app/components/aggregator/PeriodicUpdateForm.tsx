@@ -300,6 +300,16 @@ export default function PeriodicUpdateForm({ session, onBack }: { session?: any,
   const [form, setForm] = useState<FormState>(INITIAL);
   const supabase = getSupabaseClient();
 
+  const periodLabel = form.period_type === "bulanan"
+    ? `${form.reporting_month || "—"} ${form.reporting_year}`
+    : `${form.reporting_quarter || "—"} ${form.reporting_year}`;
+
+  const steps = form.period_type === "bulanan" ? MONTHLY_STEPS : QUARTERLY_STEPS;
+  const totalSteps = steps.length;
+  const info = steps[step - 1];
+  const progress = ((step - 1) / (totalSteps - 1)) * 100;
+  const health = useMemo(() => calcHealthIndex(form), [form]);
+
   // (biarkan fungsi-fungsi kalkulasi bawaan Om tetap di sini)
   // ...
 

@@ -143,6 +143,35 @@ export default function KPIDocsForm({ bmcData, session, onBack, onComplete }: { 
   const docPct = completionOf(form.documents.flatMap((d) => [d.document_type, d.document_number]));
   const overallPct = Math.round((kpiFinancialPct + kpiCustomerPct + docPct) / 3);
 
+  const [aiInsight, setAiInsight] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  // 🚀 FUNGSI TEMBAK API VERCEL
+  const getAiInsight = async () => {
+    setIsAiLoading(true);
+    try {
+      // Tinggal tembak endpoint lokal/vercel kita sendiri
+      const res = await fetch("/api/ai-insight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bmcData, kpiData: form })
+      });
+      
+      const data = await res.json();
+      
+      if (data.result) {
+        setAiInsight(data.result);
+      } else {
+        toast.error(data.error || "AI lagi pusing, coba lagi nanti.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal nyambung ke server AI kita.");
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   // 🚀 FUNGSI SAKTI PENYIMPANAN KE SUPABASE
   const handleSubmitToSupabase = async () => {
     if (!session?.user?.id) {
