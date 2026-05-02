@@ -141,12 +141,16 @@ export default function DashboardTab({ onNavigate, userName = "Member", userRole
                 <div className="hero-bg-orb hero-orb-1" style={{ background: 'var(--blue)' }} />
                 <div className="hero-bg-orb hero-orb-2" style={{ background: 'var(--accent-primary)' }} />
                 <div className="hero-content">
-                  <p className="hero-label">Direktori Ekonomi</p>
+                  {/* REVISI 1: Teks Atas (Direktori Ekonomi Dihilangkan) */}
+                  <p className="hero-label">Business Aggregator</p>
+                  
                   <h2 className="hero-value" style={{ fontSize: '1.6rem', lineHeight: '1.2', marginTop: '4px' }}>
                     Dukung Bisnis <br />Saudara Kita
                   </h2>
+                  
+                  {/* REVISI 2: Teks Subtitle */}
                   <div className="hero-change" style={{ background: 'rgba(255,255,255,0.2)', marginTop: '12px' }}>
-                    <span>Temukan & Berbelanja di Ekosistem Jamaah</span>
+                    <span>Temukan Inspirasi Bisnis di Ekosistem Jamaah.net</span>
                   </div>
                 </div>
                 <div className="hero-ring">
@@ -154,40 +158,27 @@ export default function DashboardTab({ onNavigate, userName = "Member", userRole
                 </div>
               </section>
 
-              <section className="dash-section">
-                <div className="section-head anim-fade d2">
-                  <h3 className="section-title">Aksi Cepat</h3>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3 anim-slide d3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div className="card" onClick={() => onNavigate("entities")} style={{ padding: '16px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ background: 'var(--blue-glow)', padding: '12px', borderRadius: '50%', color: 'var(--blue)' }}>
-                      <Building2 size={24} />
-                    </div>
-                    <h4 style={{ fontSize: '12px', fontWeight: 'bold' }}>Daftar Bisnis</h4>
-                  </div>
-                  
-                  <div className="card" onClick={() => onNavigate("map")} style={{ padding: '16px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ background: 'var(--amber-glow)', padding: '12px', borderRadius: '50%', color: 'var(--amber)' }}>
-                      <Map size={24} />
-                    </div>
-                    <h4 style={{ fontSize: '12px', fontWeight: 'bold' }}>Peta Lokasi</h4>
-                  </div>
-                </div>
-              </section>
+              {/* REVISI 3: Bagian "Aksi Cepat" Dihilangkan Sesuai Arahan Pakde */}
 
               <section className="dash-section mt-4">
                 <div className="card anim-slide d4" style={{ padding: '24px 20px', textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
                   <Store size={32} style={{ margin: '0 auto 12px', color: 'var(--accent-primary)' }} />
-                  <h3 style={{ fontSize: '16px', marginBottom: '8px', color: 'var(--text-primary)' }}>Punya Usaha Sendiri?</h3>
+                  
+                  {/* REVISI 4: Punya Usaha -> Punya Bisnis */}
+                  <h3 style={{ fontSize: '16px', marginBottom: '8px', color: 'var(--text-primary)' }}>Punya Bisnis Sendiri?</h3>
+                  
+                  {/* REVISI 5: Teks Penjelasan */}
                   <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.5' }}>
-                    Jadilah bagian dari ekosistem ekonomi Jamaah.net untuk mendapatkan eksposur pasar dan insight pengembangan bisnis dari Pusat.
+                    Jadilah bagian dari ekosistem bisnis jamaah.net untuk mendapatkan wawasan pasar dan inspirasi pengembangan bisnis.
                   </p>
+                  
+                  {/* REVISI 6: Teks Tombol */}
                   <button 
+                    onClick={() => onNavigate("input-data")}
                     className="badge" 
                     style={{ background: 'var(--accent-primary)', color: 'white', padding: '10px 20px', fontSize: '12px', width: '100%', justifyContent: 'center', fontWeight: 'bold' }}
                   >
-                    Daftar Jadi Member Aggregator
+                    Daftar Jadi Member Business Aggregator
                   </button>
                 </div>
               </section>
