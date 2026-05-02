@@ -161,15 +161,17 @@ export default function KPIDocsForm({ bmcData, session, onBack, onComplete }: { 
       
       if (data.result) {
         setAiInsight(data.result);
+        
+        // --- TAMBAHAN BARU: SIMPAN KE SUPABASE ---
+        const { error: updateErr } = await supabase
+          .from('business_entities')
+          .update({ ai_insight: data.result })
+          .eq('owner_id', session.user.id);
+          
+        if (updateErr) console.error("Gagal nyimpan AI ke DB:", updateErr);
+        // -----------------------------------------
+        
       } else {
-        toast.error(data.error || "AI lagi pusing, coba lagi nanti.");
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Gagal nyambung ke server AI kita.");
-    } finally {
-      setIsAiLoading(false);
-    }
   };
 
   // 🚀 FUNGSI SAKTI PENYIMPANAN KE SUPABASE

@@ -98,35 +98,73 @@ export default function DashboardTab({ onNavigate, userName = "Member", userRole
             </>
           )}
 
-          {/* TAMPILAN MEMBER */}
+          {/* ======================================================== */}
+          {/* 2. RENDER TAMPILAN MEMBER (MICRO VIEW - PUNYA BISNIS)    */}
+          {/* ======================================================== */}
           {isMember && (
             <>
               {myBusiness ? (
                 <>
                   <section className="dash-hero anim-scale d1">
-                    <div className="hero-bg-orb hero-orb-1" style={{ background: 'var(--amber)' }} /><div className="hero-bg-orb hero-orb-2" style={{ background: 'var(--accent-primary)' }} />
-                    <div className="hero-content"><p className="hero-label">Status Bisnis Anda</p><h2 className="hero-value" style={{ fontSize: '1.8rem' }}>{myBusiness.business_name}</h2><div className="hero-change" style={{ background: 'rgba(255,255,255,0.2)' }}><span>Sektor: {myBusiness.sector}</span></div></div>
-                  </section>
-                  <section className="dash-section">
-                    <div className="section-head"><h3 className="section-title">Performa Unit</h3></div>
-                    <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(1, 1fr)' }}>
-                      <div className="kpi-card card" style={{ flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
-                        <div className="kpi-icon" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)' }}><DollarSign/></div>
-                        <div><p className="kpi-label">Omset</p><span className="kpi-value">Rp {formatRev(myBusiness.monthly_revenue)}</span></div>
-                      </div>
-                      <div className="kpi-card card" style={{ flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
-                        <div className="kpi-icon" style={{ background: 'var(--blue-glow)', color: 'var(--blue)' }}><TrendingUp/></div>
-                        <div><p className="kpi-label">Growth</p><span className="kpi-value">{myBusiness.growth_rate}% YoY</span></div>
+                    <div className="hero-bg-orb hero-orb-1" style={{ background: 'var(--amber)' }} />
+                    <div className="hero-bg-orb hero-orb-2" style={{ background: 'var(--accent-primary)' }} />
+                    <div className="hero-content">
+                      <p className="hero-label">Status Bisnis Anda</p>
+                      <h2 className="hero-value" style={{ fontSize: '1.8rem' }}>{myBusiness.business_name}</h2>
+                      <div className="hero-change" style={{ background: 'rgba(255,255,255,0.2)' }}>
+                        <span>Sektor: {myBusiness.sector}</span>
                       </div>
                     </div>
                   </section>
+                  
+                  <section className="dash-section">
+                    <div className="section-head">
+                      <h3 className="section-title">Performa Unit</h3>
+                    </div>
+                    <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(1, 1fr)' }}>
+                      <div className="kpi-card card" style={{ flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
+                        <div className="kpi-icon" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)' }}><DollarSign/></div>
+                        <div>
+                          <p className="kpi-label">Omset</p>
+                          <span className="kpi-value">Rp {formatRev(myBusiness.monthly_revenue)}</span>
+                        </div>
+                      </div>
+                      <div className="kpi-card card" style={{ flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
+                        <div className="kpi-icon" style={{ background: 'var(--blue-glow)', color: 'var(--blue)' }}><TrendingUp/></div>
+                        <div>
+                          <p className="kpi-label">Growth</p>
+                          <span className="kpi-value">{myBusiness.growth_rate}% YoY</span>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* --- TAMBAHAN SECTION AI INSIGHT (MEMBER) --- */}
+                  {myBusiness.ai_insight && (
+                    <section className="dash-section mt-4">
+                      <div className="section-head anim-fade">
+                        <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#a855f7' }}>
+                          <Zap size={16} /> Konsultan AI Pribadi
+                        </h3>
+                      </div>
+                      <div className="card anim-slide" style={{ padding: '20px', background: 'var(--bg-elevated)', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+                          {myBusiness.ai_insight}
+                        </div>
+                      </div>
+                    </section>
+                  )}
+                  {/* -------------------------------------------- */}
+                  
                 </>
               ) : (
                 <section className="dash-section mt-4 text-center py-8">
                   <Store size={40} style={{ margin: '0 auto 16px', color: 'var(--text-secondary)' }}/>
                   <h3 className="font-bold text-lg">Data Bisnis Belum Tersedia</h3>
                   <p className="text-sm text-gray-500 mb-4">Silakan masuk ke tab "Input Data" di bawah untuk melengkapi profil bisnis Anda.</p>
-                  <button className="badge" onClick={() => onNavigate("input-data")} style={{ background: 'var(--accent-primary)', color: 'white', padding: '10px 20px' }}>Isi Form Sekarang</button>
+                  <button className="badge" onClick={() => onNavigate("input-data")} style={{ background: 'var(--accent-primary)', color: 'white', padding: '10px 20px' }}>
+                    Isi Form Sekarang
+                  </button>
                 </section>
               )}
             </>
