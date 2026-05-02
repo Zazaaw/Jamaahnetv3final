@@ -4,12 +4,11 @@ import React, { useState } from "react";
 import {
   ChevronLeft, BarChart3, Users, FileText,
   DollarSign, TrendingUp, Plus, Trash2, CheckCircle2,
-  ShieldCheck, AlertCircle,
+  ShieldCheck, AlertCircle, Zap, Loader2
 } from "lucide-react";
-import "./KPIDocsForm.css";
 import { getSupabaseClient } from "../../utils/supabase/client";
 import { toast } from "sonner@2.0.3";
-import { Loader2 } from "lucide-react";
+import "./KPIDocsForm.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type BizDocument = {
@@ -21,20 +20,17 @@ type BizDocument = {
 };
 
 type KPIState = {
-  // Keuangan
   revenue_monthly: string;
   profit_monthly: string;
   gross_margin: string;
   net_margin: string;
   capacity_utilization: string;
   break_even_point: string;
-  // Pelanggan
   customer_count: string;
   repeat_customer_rate: string;
   customer_satisfaction_score: string;
   on_time_delivery_rate: string;
   complaint_rate: string;
-  // Dokumen
   documents: BizDocument[];
 };
 
@@ -124,7 +120,6 @@ export default function KPIDocsForm({ bmcData, session, onBack, onComplete }: { 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const supabase = getSupabaseClient();
 
-  // (Tetap biarkan state `form` dan fungsinya seperti aslinya di sini)
   const [form, setForm] = useState<KPIState>({
     revenue_monthly: "", profit_monthly: "", gross_margin: "", net_margin: "", capacity_utilization: "", break_even_point: "",
     customer_count: "", repeat_customer_rate: "", customer_satisfaction_score: "", on_time_delivery_rate: "", complaint_rate: "",
@@ -142,37 +137,6 @@ export default function KPIDocsForm({ bmcData, session, onBack, onComplete }: { 
   const kpiCustomerPct = completionOf([form.customer_count, form.repeat_customer_rate, form.customer_satisfaction_score, form.on_time_delivery_rate]);
   const docPct = completionOf(form.documents.flatMap((d) => [d.document_type, d.document_number]));
   const overallPct = Math.round((kpiFinancialPct + kpiCustomerPct + docPct) / 3);
-
-  const [aiInsight, setAiInsight] = useState("");
-  const [isAiLoading, setIsAiLoading] = useState(false);
-
-  // 🚀 FUNGSI TEMBAK API VERCEL
-  const getAiInsight = async () => {
-    setIsAiLoading(true);
-    try {
-      // Tinggal tembak endpoint lokal/vercel kita sendiri
-      const res = await fetch("/api/ai-insight", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bmcData, kpiData: form })
-      });
-      
-      const data = await res.json();
-      
-      if (data.result) {
-        setAiInsight(data.result);
-        
-        // --- TAMBAHAN BARU: SIMPAN KE SUPABASE ---
-        const { error: updateErr } = await supabase
-          .from('business_entities')
-          .update({ ai_insight: data.result })
-          .eq('owner_id', session.user.id);
-          
-        if (updateErr) console.error("Gagal nyimpan AI ke DB:", updateErr);
-        // -----------------------------------------
-        
-      } else {
-  };
 
   // 🚀 FUNGSI SAKTI PENYIMPANAN KE SUPABASE
   const handleSubmitToSupabase = async () => {
@@ -216,14 +180,72 @@ export default function KPIDocsForm({ bmcData, session, onBack, onComplete }: { 
     }
   };
 
+  // 🚀 FUNGSI TEMBAK API VERCEL
+  const [aiInsight, setAiInsight] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  const getAiInsight = async () => {
+    setIsAiLoading(true);
+    try {
+      // Tinggal tembak endpoint lokal/vercel kita sendiri
+      const res = await fetch("/api/ai-insight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bmcData, kpiData: form })
+      });
+      
+      const data = await res.json();
+      
+      if (data.result) {
+        setAiInsight(data.result);
+        
+        // --- TAMBAHAN BARU: SIMPAN KE SUPABASE ---
+        const { error: updateErr } = await supabase
+          .from('business_entities')
+          .update({ ai_insight: data.result })
+          .eq('owner_id', session.user.id);
+          
+        if (updateErr) console.error("Gagal nyimpan AI ke DB:", updateErr);
+        // -----------------------------------------
+        
+      } else {
+        toast.error(data.error || "AI lagi pusing, coba lagi nanti.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal nyambung ke server AI kita.");
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   if (submitted) {
     return (
       <div className="kd-form">
-        <div className="kd-success anim-scale">
+        <div className="kd-success anim-scale" style={{ minHeight: 'auto', paddingBottom: '20px', paddingTop: '40px' }}>
           <div className="kd-success-ring"><CheckCircle2 size={44} /></div>
           <h2>Data KPI & Dokumen Tersimpan!</h2>
-          <p>Profil bisnis Anda kini lengkap. Tim agregator akan melakukan verifikasi legalitas dalam 1–3 hari kerja.</p>
-          <button className="kd-btn-done" onClick={onComplete || onBack}>Selesai & Kembali ke Hub</button>
+          <p>Profil bisnis Anda kini lengkap. Tim agregator akan melakukan verifikasi legalitas.</p>
+
+          {!aiInsight ? (
+             <button
+               onClick={getAiInsight}
+               disabled={isAiLoading}
+               style={{ marginTop: '16px', background: 'linear-gradient(135deg, #8b5cf6, #a855f7)', color: 'white', padding: '12px 24px', borderRadius: '8px', border: 'none', fontWeight: 'bold', display: 'flex', gap: '8px', alignItems: 'center', cursor: 'pointer' }}
+             >
+               {isAiLoading ? <Loader2 className="animate-spin" size={18} /> : <Zap size={18} />}
+               {isAiLoading ? "Sedang Menganalisis..." : "Minta AI Analisis Bisnis Saya"}
+             </button>
+          ) : (
+            <div style={{ marginTop: '20px', padding: '16px', background: 'var(--bg-elevated)', borderRadius: '12px', border: '1px solid var(--border-subtle)', textAlign: 'left', width: '100%', maxWidth: '500px' }}>
+              <h3 style={{ fontSize: '14px', color: '#a855f7', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}><Zap size={16} /> Rekomendasi Strategi AI</h3>
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+                {aiInsight}
+              </div>
+            </div>
+          )}
+
+          <button className="kd-btn-done" onClick={onComplete || onBack} style={{ marginTop: '24px' }}>Selesai & Kembali ke Hub</button>
         </div>
       </div>
     );

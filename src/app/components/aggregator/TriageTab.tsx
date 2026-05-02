@@ -18,6 +18,7 @@ import {
 import { getSupabaseClient } from "../../utils/supabase/client";
 import "./TriageTab.css";
 
+// 1. TAMBAHIN ai_insight DI SINI WAK
 interface BusinessEntity {
   id: string;
   business_name: string;
@@ -26,6 +27,7 @@ interface BusinessEntity {
   growth_rate: number;
   bmc_score: number;
   health_status: string;
+  ai_insight?: string; 
   bmc_details: { needs: string; offers: string };
 }
 
@@ -64,6 +66,7 @@ export default function TriageTab() {
           label: "Urgent Review",
           entity: entity.business_name,
           sector: entity.sector,
+          ai_insight: entity.ai_insight, // Oper data AI ke kartu
           deadline: "Segera",
           color: "#f87171",
           colorBg: "rgba(239,68,68,0.12)",
@@ -88,6 +91,7 @@ export default function TriageTab() {
           label: "Strategic Expansion",
           entity: entity.business_name,
           sector: entity.sector,
+          ai_insight: entity.ai_insight, // Oper data AI ke kartu
           deadline: "30 Hari",
           color: "#60a5fa",
           colorBg: "rgba(59,130,246,0.12)",
@@ -111,6 +115,7 @@ export default function TriageTab() {
         label: "Golden Opportunity",
         entity: entity.business_name,
         sector: entity.sector,
+        ai_insight: entity.ai_insight, // Oper data AI ke kartu
         deadline: "7 Hari",
         color: "#fbbf24",
         colorBg: "rgba(245,158,11,0.12)",
@@ -140,7 +145,7 @@ export default function TriageTab() {
     {
       title: "Scale-Up & Duplikasi Bisnis",
       subtitle: "Mendongkrak omset ekosistem Jamaah",
-      entities: dynamicTriageItems.filter(t => t.priority === 'EXPANSION').map(t => t.entity).slice(0, 3), // Ambil 3 teratas
+      entities: dynamicTriageItems.filter(t => t.priority === 'EXPANSION').map(t => t.entity).slice(0, 3),
       condition: `${expansionCount} Bisnis siap diekspansi`,
       actions: ["Injeksi Modal Skala Besar", "Buka Cabang Bersama"],
       color: "#34d399",
@@ -229,7 +234,7 @@ export default function TriageTab() {
                     ))}
                   </div>
 
-                  {/* Actions (Sekarang narik dari Needs & Offers member) */}
+                  {/* Actions */}
                   <div className="triage-actions">
                     <span className="triage-actions-label">Rekomendasi Aksi</span>
                     {t.actions.map((a, j) => (
@@ -238,6 +243,20 @@ export default function TriageTab() {
                       </div>
                     ))}
                   </div>
+
+                  {/* --- AI INSIGHT UNTUK ADMIN PUSAT --- */}
+                  {t.ai_insight && (
+                    <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(168, 85, 247, 0.08)', border: '1px solid rgba(168, 85, 247, 0.2)', borderRadius: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#a855f7', fontSize: '11px', fontWeight: 'bold', marginBottom: '6px' }}>
+                        <Zap size={14} /> Analisis AI Pusat
+                      </div>
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.5' }}>
+                        {t.ai_insight}
+                      </p>
+                    </div>
+                  )}
+                  {/* ------------------------------------- */}
+
                 </div>
               </div>
             ))}
