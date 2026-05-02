@@ -7,6 +7,9 @@ import {
   ShieldCheck, AlertCircle,
 } from "lucide-react";
 import "./KPIDocsForm.css";
+import { getSupabaseClient } from "../../utils/supabase/client";
+import { toast } from "sonner@2.0.3";
+import { Loader2 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type BizDocument = {
@@ -116,63 +119,80 @@ function completionOf(fields: string[]): number {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function KPIDocsForm({ onBack }: { onBack: () => void }) {
+export default function KPIDocsForm({ bmcData, session, onBack, onComplete }: { bmcData?: any, session?: any, onBack: () => void, onComplete?: () => void }) {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const supabase = getSupabaseClient();
+
+  // (Tetap biarkan state `form` dan fungsinya seperti aslinya di sini)
   const [form, setForm] = useState<KPIState>({
-    revenue_monthly: "", profit_monthly: "", gross_margin: "",
-    net_margin: "", capacity_utilization: "", break_even_point: "",
-    customer_count: "", repeat_customer_rate: "",
-    customer_satisfaction_score: "", on_time_delivery_rate: "",
-    complaint_rate: "",
+    revenue_monthly: "", profit_monthly: "", gross_margin: "", net_margin: "", capacity_utilization: "", break_even_point: "",
+    customer_count: "", repeat_customer_rate: "", customer_satisfaction_score: "", on_time_delivery_rate: "", complaint_rate: "",
     documents: [emptyDoc()],
   });
 
-  const set = (field: keyof KPIState, value: unknown) =>
-    setForm((prev) => ({ ...prev, [field]: value }));
-
+  const set = (field: keyof KPIState, value: unknown) => setForm((prev) => ({ ...prev, [field]: value }));
   function updateDoc(index: number, field: keyof BizDocument, value: string) {
-    setForm((prev) => {
-      const docs = [...prev.documents];
-      docs[index] = { ...docs[index], [field]: value };
-      return { ...prev, documents: docs };
-    });
+    setForm((prev) => { const docs = [...prev.documents]; docs[index] = { ...docs[index], [field]: value }; return { ...prev, documents: docs }; });
   }
-  function addDoc() {
-    setForm((prev) => ({ ...prev, documents: [...prev.documents, emptyDoc()] }));
-  }
-  function removeDoc(index: number) {
-    setForm((prev) => ({
-      ...prev,
-      documents: prev.documents.filter((_, i) => i !== index),
-    }));
-  }
+  function addDoc() { setForm((prev) => ({ ...prev, documents: [...prev.documents, emptyDoc()] })); }
+  function removeDoc(index: number) { setForm((prev) => ({ ...prev, documents: prev.documents.filter((_, i) => i !== index), })); }
 
-  // Completion rings
-  const kpiFinancialPct = completionOf([
-    form.revenue_monthly, form.profit_monthly, form.gross_margin,
-    form.net_margin, form.capacity_utilization,
-  ]);
-  const kpiCustomerPct = completionOf([
-    form.customer_count, form.repeat_customer_rate,
-    form.customer_satisfaction_score, form.on_time_delivery_rate,
-  ]);
-  const docPct = completionOf(
-    form.documents.flatMap((d) => [d.document_type, d.document_number])
-  );
+  const kpiFinancialPct = completionOf([form.revenue_monthly, form.profit_monthly, form.gross_margin, form.net_margin, form.capacity_utilization]);
+  const kpiCustomerPct = completionOf([form.customer_count, form.repeat_customer_rate, form.customer_satisfaction_score, form.on_time_delivery_rate]);
+  const docPct = completionOf(form.documents.flatMap((d) => [d.document_type, d.document_number]));
   const overallPct = Math.round((kpiFinancialPct + kpiCustomerPct + docPct) / 3);
+
+  // 🚀 FUNGSI SAKTI PENYIMPANAN KE SUPABASE
+  const handleSubmitToSupabase = async () => {
+    if (!session?.user?.id) {
+      toast.error("Sesi tidak valid, silakan login ulang!");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        owner_id: session.user.id,
+        business_name: bmcData.business_name,
+        brand_name: bmcData.brand_name,
+        owner_name: bmcData.owner_name,
+        sector: bmcData.kbli_section ? bmcData.kbli_section.split("—")[0].trim() : "Lainnya",
+        kbli_code: bmcData.kbli_code,
+        kbli_name: bmcData.kbli_name,
+        business_type: bmcData.business_type,
+        business_scale: bmcData.business_scale,
+        monthly_revenue: parseFloat(form.revenue_monthly.replace(/[^0-9.-]+/g,"")) || 0,
+        growth_rate: 0, // Baseline pendaftaran awal
+        bmc_score: 50, // Nilai tengah sebelum dinilai pusat
+        health_status: "Active",
+        contact_info: { phone: bmcData.phone_number, whatsapp: bmcData.whatsapp_number, email: bmcData.email, website: bmcData.website, address: bmcData.address },
+        bmc_data: bmcData,
+        kpi_data: form,
+        documents: form.documents
+      };
+
+      const { error } = await supabase.from('business_entities').insert([payload]);
+      if (error) throw error;
+      
+      toast.success("Registrasi Bisnis Berhasil!");
+      setSubmitted(true);
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal mengirim data. Cek koneksi Anda.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (submitted) {
     return (
       <div className="kd-form">
         <div className="kd-success anim-scale">
-          <div className="kd-success-ring">
-            <CheckCircle2 size={44} />
-          </div>
-          <h2>Data KPI &amp; Dokumen Tersimpan!</h2>
+          <div className="kd-success-ring"><CheckCircle2 size={44} /></div>
+          <h2>Data KPI & Dokumen Tersimpan!</h2>
           <p>Profil bisnis Anda kini lengkap. Tim agregator akan melakukan verifikasi legalitas dalam 1–3 hari kerja.</p>
-          <button className="kd-btn-done" onClick={onBack}>
-            Kembali ke Registrasi
-          </button>
+          <button className="kd-btn-done" onClick={onComplete || onBack}>Selesai & Kembali ke Hub</button>
         </div>
       </div>
     );
@@ -335,9 +355,9 @@ export default function KPIDocsForm({ onBack }: { onBack: () => void }) {
 
       {/* Submit */}
       <div className="kd-footer anim-slide d5">
-        <button className="kd-btn-submit" onClick={() => setSubmitted(true)} type="button">
-          <CheckCircle2 size={17} />
-          Simpan KPI &amp; Dokumen
+        <button className="kd-btn-submit" disabled={isSubmitting} onClick={handleSubmitToSupabase} type="button">
+          {isSubmitting ? <Loader2 className="animate-spin" size={17} /> : <CheckCircle2 size={17} />}
+          {isSubmitting ? "Memproses..." : "Simpan KPI & Dokumen"}
         </button>
       </div>
     </div>

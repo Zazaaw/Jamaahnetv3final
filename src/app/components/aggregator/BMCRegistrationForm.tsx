@@ -519,7 +519,7 @@ function SectionNote({ children }: { children: React.ReactNode }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function BMCRegistrationForm() {
+export default function BMCRegistrationForm({ session, onBack }: { session?: any, onBack?: () => void }) {
   const [step, setStep] = useState(1);
   const [showKBLI, setShowKBLI] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -1066,7 +1066,8 @@ export default function BMCRegistrationForm() {
   };
 
   if (showKPIDocs) {
-    return <KPIDocsForm onBack={() => setShowKPIDocs(false)} />;
+    // Kita lempar data BMC dan Session ke Form KPI buat di-submit sekalian ke Supabase
+    return <KPIDocsForm bmcData={form} session={session} onBack={() => setShowKPIDocs(false)} onComplete={onBack} />;
   }
 
   if (submitted) {

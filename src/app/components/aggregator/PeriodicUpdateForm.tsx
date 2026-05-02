@@ -8,6 +8,9 @@ import {
   Handshake, Package,
 } from "lucide-react";
 import "./PeriodicUpdateForm.css";
+import { getSupabaseClient } from "../../utils/supabase/client";
+import { toast } from "sonner@2.0.3";
+import { Loader2 } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const MONTHS = [
@@ -290,64 +293,60 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function PeriodicUpdateForm({ onBack }: { onBack: () => void }) {
+export default function PeriodicUpdateForm({ session, onBack }: { session?: any, onBack: () => void }) {
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<FormState>(INITIAL);
+  const supabase = getSupabaseClient();
 
-  const set = (field: keyof FormState, value: unknown) =>
-    setForm((prev) => ({ ...prev, [field]: value }));
+  // (biarkan fungsi-fungsi kalkulasi bawaan Om tetap di sini)
+  // ...
 
-  const steps = form.period_type === "bulanan" ? MONTHLY_STEPS : QUARTERLY_STEPS;
+  // 🚀 FUNGSI SAKTI PENYIMPANAN UPDATE KE SUPABASE
+  const handleSubmitUpdate = async () => {
+    if (!session?.user?.id) {
+      toast.error("Sesi tidak valid!");
+      return;
+    }
 
-  const totalSteps = steps.length;
-  const info = steps[step - 1];
-  const progress = ((step - 1) / (totalSteps - 1)) * 100;
+    setIsSubmitting(true);
+    try {
+      // 1. Simpan ke riwayat update
+      const historyPayload = {
+        owner_id: session.user.id,
+        period_type: form.period_type,
+        reporting_month: form.reporting_month,
+        reporting_quarter: form.reporting_quarter,
+        reporting_year: form.reporting_year,
+        health_score: health.total,
+        health_category: health.category,
+        update_data: form
+      };
+      
+      const { error: histErr } = await supabase.from('periodic_updates').insert([historyPayload]);
+      if (histErr) throw histErr;
 
-  const health = useMemo(() => calcHealthIndex(form), [form]);
+      // 2. Update dashboard utama (biar grafik Admin gerak)
+      if (form.period_type === "bulanan") {
+         const newRev = parseFloat(form.revenue_current.replace(/[^0-9.-]+/g,"")) || 0;
+         const newGrowth = parseFloat(growthPct as string) || 0;
+         await supabase.from('business_entities').update({
+             monthly_revenue: newRev,
+             growth_rate: newGrowth,
+             bmc_score: health.total
+         }).eq('owner_id', session.user.id);
+      }
 
-  // Auto-derived
-  const revCurrent = parseFloat(form.revenue_current) || 0;
-  const revPrev = parseFloat(form.revenue_previous) || 0;
-  const growthPct = revPrev > 0 ? ((revCurrent - revPrev) / revPrev * 100).toFixed(1) : "—";
-  const grossProfit = revCurrent > 0 && parseFloat(form.total_cost) > 0
-    ? (revCurrent - parseFloat(form.total_cost)).toLocaleString("id-ID")
-    : "—";
-
-  const periodLabel = form.period_type === "bulanan"
-    ? `${form.reporting_month || "—"} ${form.reporting_year}`
-    : `${form.reporting_quarter || "—"} ${form.reporting_year}`;
-
-  // ── Step Renders ─────────────────────────────────────────────
-  // ── Shared period picker (step 1 on both modes) ──────────────
-  const renderPeriodToggle = () => (
-    <div className="pu-period-card">
-      <div className="pu-period-type-toggle">
-        {(["bulanan", "triwulanan"] as PeriodType[]).map((t) => (
-          <button key={t} type="button"
-            className={`pu-type-btn ${form.period_type === t ? "active" : ""}`}
-            onClick={() => { set("period_type", t); setStep(1); }}>
-            {t === "bulanan" ? "Bulanan" : "Triwulanan"}
-          </button>
-        ))}
-      </div>
-      <PURow>
-        <FG label="Tahun">
-          <PUSelect value={form.reporting_year} onChange={(v) => set("reporting_year", v)}
-            options={YEARS.map((y) => ({ value: y, label: y }))} />
-        </FG>
-        <FG label={form.period_type === "bulanan" ? "Bulan" : "Kuartal"}>
-          {form.period_type === "bulanan" ? (
-            <PUSelect value={form.reporting_month} onChange={(v) => set("reporting_month", v)}
-              options={MONTHS.map((m) => ({ value: m, label: m }))} />
-          ) : (
-            <PUSelect value={form.reporting_quarter} onChange={(v) => set("reporting_quarter", v)}
-              options={QUARTERS.map((q) => ({ value: q, label: q }))} />
-          )}
-        </FG>
-      </PURow>
-    </div>
-  );
+      toast.success("Laporan berhasil diperbarui!");
+      setSubmitted(true);
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal mengirim update periodik.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const renderStatusBlock = (highlightHint: string, showImprovementPlan = false) => (
     <>
@@ -924,8 +923,9 @@ export default function PeriodicUpdateForm({ onBack }: { onBack: () => void }) {
             Lanjut <ChevronRight size={15} />
           </button>
         ) : (
-          <button className="pu-btn-submit" onClick={() => setSubmitted(true)} type="button">
-            <CheckCircle2 size={16} /> Simpan Update
+          <button className="pu-btn-submit" disabled={isSubmitting} onClick={handleSubmitUpdate} type="button">
+            {isSubmitting ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />} 
+            {isSubmitting ? "Menyimpan..." : "Simpan Update"}
           </button>
         )}
       </div>
